@@ -2,6 +2,7 @@ import mdx from "@astrojs/mdx";
 import sitemap from "@astrojs/sitemap";
 import tailwind from "@astrojs/tailwind";
 import react from "@astrojs/react";
+import { unified } from "@astrojs/markdown-remark";
 import playformCompress from "@playform/compress";
 import icon from "astro-icon";
 import { defineConfig } from "astro/config";
@@ -218,12 +219,14 @@ export default defineConfig({
       },
       ],
     },
-    remarkPlugins: [remarkMath, remarkReadingTime],
-    rehypePlugins: [rehypeKatex, [
-      rehypeExternalLinks,
-      {
-        content: { type: "text", value: "↗" },
-      },
-    ]],
+    processor: unified({
+      remarkPlugins: [remarkMath, remarkReadingTime],
+      rehypePlugins: [rehypeKatex, [
+        rehypeExternalLinks,
+        {
+          content: { type: "text", value: "↗" },
+        },
+      ]],
+    }),
   },
 });

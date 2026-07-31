@@ -7,7 +7,7 @@ import { batchDeleteBlogs } from '@/components/write/services/batch-delete';
 import { readFileAsText } from '@/lib/file-utils';
 
 interface Post {
-    slug: string;
+    id: string;
     data: {
         title: string;
         pubDate: Date | string;
@@ -176,7 +176,7 @@ export default function ArchiveList({ posts, labels, dateFormat }: ArchiveListPr
                                 <button
                                     onClick={() => {
                                         // 全选/取消全选逻辑
-                                        const allSlugs = new Set(posts.map(p => p.slug));
+                                        const allSlugs = new Set(posts.map(p => p.id));
                                         if (selectedSlugs.size === allSlugs.size) {
                                             setSelectedSlugs(new Set());
                                         } else {
@@ -246,23 +246,23 @@ export default function ArchiveList({ posts, labels, dateFormat }: ArchiveListPr
 
                                                     <ul className="archive-posts">
                                                         {monthPosts.map((post) => (
-                                                            <li key={post.slug} className="archive-item">
+                                                            <li key={post.id} className="archive-item">
                                                                 <div className="flex items-center gap-2 w-full">
                                                                     {editMode && (
                                                                         <input
                                                                             type="checkbox"
                                                                             className="checkbox checkbox-sm checkbox-error shrink-0"
-                                                                            checked={selectedSlugs.has(post.slug)}
-                                                                            onChange={() => toggleSelect(post.slug)}
+                                                                            checked={selectedSlugs.has(post.id)}
+                                                                            onChange={() => toggleSelect(post.id)}
                                                                         />
                                                                     )}
                                                                     <a
-                                                                        href={`/blog/${post.slug}`}
-                                                                        className={`archive-card flex-1 block ${editMode && selectedSlugs.has(post.slug) ? '!border-error !bg-error/5' : ''}`}
+                                                                        href={`/blog/${post.id}`}
+                                                                        className={`archive-card flex-1 block ${editMode && selectedSlugs.has(post.id) ? '!border-error !bg-error/5' : ''}`}
                                                                         onClick={e => {
                                                                             if (editMode) {
                                                                                 e.preventDefault();
-                                                                                toggleSelect(post.slug);
+                                                                                toggleSelect(post.id);
                                                                             }
                                                                         }}
                                                                     >
