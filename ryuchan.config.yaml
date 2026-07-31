@@ -1,6 +1,6 @@
 site:
-  tab: RyuChan
-  title: RyuChan
+  tab: Saimen
+  title: Saimen
   title_type: image
   description: 🌸 轻盈、优雅、纯净 —— 用文字与图片记录生活与创意
   language: zh
@@ -121,9 +121,9 @@ github:
   encryptKey: 
 umami:
   enable: true
-  baseUrl: https://umami.131714.xyz
-  shareId: jToXL5Z3hnA1gKUw
-  websiteId: 3f9afc6c-f0bd-4734-be15-6d053960d34d
+  baseUrl: https://sj.y00.cc.cd
+  shareId: CM4AdfjVYpsnrijc
+  websiteId: ed3e8771-0600-4fae-8d45-fb3afc354652
   timezone: Asia/Shanghai
 user:
   name: KoBariDev
@@ -172,7 +172,7 @@ user:
         svg: ri:telegram-line
 comments:
   enable: true
-  type: twikoo
+  type: waline
   giscus:
     repo: kobaridev/gsc
     repoId: R_kgDOPTM-mA
@@ -185,7 +185,7 @@ comments:
     emitMetadata: '0'
     loading: lazy
   waline:
-    serverURL: https://waline.131714.xyz
+    serverURL: https://yu.y00.cc.cd
     lang: zh
   twikoo:
     envId: https://twikoo.131714.xyz/

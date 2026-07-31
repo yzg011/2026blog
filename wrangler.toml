@@ -1,6 +1,6 @@
 main = "worker/index.js"
-name = "ryuchan"
-compatibility_date = "2026-04-29"
+name = "2026blog"
+compatibility_date = "2026-07-31"
 compatibility_flags = ["nodejs_compat"]
 
 [assets]
