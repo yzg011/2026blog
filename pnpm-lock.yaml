@@ -48,8 +48,8 @@ importers:
         specifier: ^1.1.5
         version: 1.1.5
       astro-vtbot:
-        specifier: ^2.1.3
-        version: 2.1.3
+        specifier: ^3.0.1
+        version: 3.0.1
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
@@ -2310,14 +2310,14 @@ packages:
   '@vtbag/element-crossing@1.1.0':
     resolution: {integrity: sha512-1YL609KPwhHUKRrVNfoogQCVJPfFrE5DubOLcCJZLHVCjWZ2ZAPcaq1wR2OP6nXD0Ok9JLX41YsEtYBYzw6CxQ==}
 
-  '@vtbag/inspection-chamber@1.0.21':
-    resolution: {integrity: sha512-7TWv9W7Nx5Dkp6Uak9gcLuaF3v10ErEuCcSiUbkN8GTvgjuAIHuV5EKTg+dI1wd7JRoWU840Jf4Avxa+yNyUmw==}
+  '@vtbag/inspection-chamber@1.0.24':
+    resolution: {integrity: sha512-L6CrMbzJ0gdG/P5WnGyVgRxHVeLhlQgXh3mp+OI4JdJjFiwIhh9+sG/FXM2DneBs5HQvaWUq4qf6NiSlgVbyvQ==}
 
   '@vtbag/turn-signal@1.3.1':
     resolution: {integrity: sha512-6rWkG+ik3U+KQGI94yNOrOh5QedB9zmP/8H51X5WQwrJz8m2MAU5YwGRRcweO/dJ6wW/Bn7OsgC1vRURnwrvCg==}
 
-  '@vtbag/utensil-drawer@1.2.7':
-    resolution: {integrity: sha512-OfbvtIV+m2u2KSG8mHBXUi1hPoTOtJeMGl9yAYiBUiZIuVLRqaoP8tc1tZIYnen9Prp92MDSQuFwEPTxD/mO/g==}
+  '@vtbag/utensil-drawer@1.2.18':
+    resolution: {integrity: sha512-Veg1J8lviA2g878otiEHoyiGR2f4PZ5Rc40UyIR4YS95QnD+1+oAZsprhUPR+YudgZPrqWx5chyPNwjkHyA0uw==}
 
   '@vue/compiler-core@3.5.13':
     resolution: {integrity: sha512-oOdAkwqUfW1WqpwSYJce06wvt6HljgY3fGeM9NcVA1HaYOij3mZG9Rkysn0OHuyUAGMbEbARIpsG+LPVlBJ5/Q==}
@@ -2433,8 +2433,8 @@ packages:
   astro-icon@1.1.5:
     resolution: {integrity: sha512-CJYS5nWOw9jz4RpGWmzNQY7D0y2ZZacH7atL2K9DeJXJVaz7/5WrxeyIxO8KASk1jCM96Q4LjRx/F3R+InjJrw==}
 
-  astro-vtbot@2.1.3:
-    resolution: {integrity: sha512-fiKL+/gc3ZNFv8SheYBY1VHGdnOZLtSnzYIb76b68b8yItQH4YIccrHRihWy9Qkybi6q2zsbZ6XgiQSK/09F5A==}
+  astro-vtbot@3.0.1:
+    resolution: {integrity: sha512-HBXINpazyRQ8h8wDMrrABvqqiOExUQrVRlzi6fv8VBI9ebsbZmGSi+BZ3JJuskVBpkfX/QkyspqgG3zfz43mjg==}
 
   astro@5.9.0:
     resolution: {integrity: sha512-AHF7oZDBQRwggHUG0bwBhRQjrDD+vJpCtPd0/GVxDB1hGRV0SQuFWS0UHX5bYczIqFcao1z9o9o0r2rQtHrTMg==}
@@ -7973,11 +7973,11 @@ snapshots:
 
   '@vtbag/element-crossing@1.1.0': {}
 
-  '@vtbag/inspection-chamber@1.0.21': {}
+  '@vtbag/inspection-chamber@1.0.24': {}
 
   '@vtbag/turn-signal@1.3.1': {}
 
-  '@vtbag/utensil-drawer@1.2.7': {}
+  '@vtbag/utensil-drawer@1.2.18': {}
 
   '@vue/compiler-core@3.5.13':
     dependencies:
@@ -8112,13 +8112,13 @@ snapshots:
       - debug
       - supports-color
 
-  astro-vtbot@2.1.3:
+  astro-vtbot@3.0.1:
     dependencies:
       '@vtbag/cam-shaft': 1.0.6
       '@vtbag/element-crossing': 1.1.0
-      '@vtbag/inspection-chamber': 1.0.21
+      '@vtbag/inspection-chamber': 1.0.24
       '@vtbag/turn-signal': 1.3.1
-      '@vtbag/utensil-drawer': 1.2.7
+      '@vtbag/utensil-drawer': 1.2.18
 
   astro@5.9.0(@types/node@24.2.0)(jiti@1.21.7)(lightningcss@1.29.3)(rollup@4.41.1)(sass-embedded@1.89.0)(terser@5.39.0)(typescript@5.8.3)(yaml@2.9.0):
     dependencies:
