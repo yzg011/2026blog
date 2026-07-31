@@ -67,11 +67,6 @@ site:
       href: /music
       svg: material-symbols:music-note-rounded
       target: _self
-    - id: project
-      text: 项目
-      href: /project
-      svg: material-symbols:code-blocks-outline
-      target: _self
     - id: friend
       text: 友人帐
       href: /friend
