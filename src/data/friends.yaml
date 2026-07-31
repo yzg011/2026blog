@@ -1,8 +1,3 @@
-- name: April
-  avatar: https://picbed.131714.xyz/picbed/20250726061546364.png
-  description: 人间四月芳菲尽！
-  url: https://www.zhaocloud.work
-  badge: 邻居
 - name: zzz
   avatar: https://blog.904002.xyz/avatar.webp
   description: 冠以名则六欲泛生，止于此则七情方休。
@@ -17,11 +12,6 @@
   avatar: https://www.kuncodeascension.fun/img/logo.jpg
   description: 代码飞升
   url: https://www.kuncodeascension.fun
-  badge: 邻居
-- name: Miuna
-  avatar: https://blog.000.moe/images/uploads/1768632093006-5ozymr.jpg
-  description: A ACGN Fans And Lolicon
-  url: https://blog.000.moe
   badge: 邻居
 - name: Nywerya
   avatar: https://blog.nywerya.xyz/profile.png

@@ -125,9 +125,9 @@ umami:
   websiteId: ed3e8771-0600-4fae-8d45-fb3afc354652
   timezone: Asia/Shanghai
 user:
-  name: KoBariDev
-  description: Ciallo～(∠・ω<)⌒★
-  site: https://hub.131714.xyz
+  name: Saimen
+  description: 一个热爱技术，努力勤奋的人
+  site: https://blog.z2m.store
   avatar: /profile.png
   title_image: /logo.png
   qr_wechat: /WeChat.jpg
@@ -153,7 +153,7 @@ user:
         svg: ri:weibo-fill
   footer:
     social:
-      - href: https://github.com/kobaridev
+      - href: https://github.com/yzg011
         ariaLabel: Github
         title: Github
         svg: ri:github-line

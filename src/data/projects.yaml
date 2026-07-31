@@ -1,7 +1,7 @@
 - name: HomePage
   avatar: https://img.131714.xyz/file/Avatar/1753366550828_avatar1.jpg
   description: 🏠 小张的个人主页！
-  url: https://131714.xyz
+  url: https://home.z2m.store/
   badge: Profile
 - name: Blog
   avatar: https://blog.131714.xyz/images/avatar.png
@@ -18,16 +18,6 @@
   description: ✨ 网盘挂载器~当然也可以添加本机的存储哇 (≧∇≦)ﾉ
   url: https://openlist.131714.xyz
   badge: Storage
-- name: LibreTV
-  avatar: https://picbed.131714.xyz/picbed/20250726182011085.png
-  description: 📺 LibreTV - 个人视频点播站，支持多种格式
-  url: https://libretv.131714.xyz
-  badge: Media
-- name: MoonTV
-  avatar: https://img.131714.xyz/file/Avatar/1753524992480_avatar11.jpg
-  description: 🌙 MoonTV - 个人视频点播站，支持多种格式
-  url: https://moontv.131714.xyz
-  badge: Media
 - name: Tipdm
   avatar: https://img.131714.xyz/file/Avatar/1753366554462_avatar5.jpg
   description: 🏆 泰迪杯的一些项目代码🌷
