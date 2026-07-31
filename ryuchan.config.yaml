@@ -95,7 +95,6 @@ anime:
     apiKey: 08a6bef260044f70c150251c79f2e476
     listId: '8556173'
 music:
-  # Meting API 基址：不要带 ?server=... 参数，脚本会自动拼接
   api: https://meting.mikus.ink/api
   playlists:
     - id: '17933567326'
@@ -118,7 +117,7 @@ github:
   repo: 2026blog
   branch: main
   appId: 4441387
-  encryptKey: 
+  encryptKey: null
 umami:
   enable: true
   baseUrl: https://sj.y00.cc.cd
