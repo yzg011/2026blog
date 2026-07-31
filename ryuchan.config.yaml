@@ -114,10 +114,10 @@ music:
       name: 自定义
       type: custom
 github:
-  owner: kobaridev
+  owner: yzg011
   repo: RyuChan
   branch: main
-  appId: 2409511
+  appId: 4441387
   encryptKey: KoBariDevYa
 umami:
   enable: true
