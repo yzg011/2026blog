@@ -23,7 +23,7 @@ site:
   icp_link: https://icp.gov.moe/?keyword=20261117
   pages:
     home:
-      title: RyuChan's Blog
+      title: Saimen's Blog
       subtitle: 欲买桂花同载酒，终不似，少年游！
       typewriterTexts:
         - 🌸 欲买桂花同载酒，终不似，少年游！
@@ -115,10 +115,10 @@ music:
       type: custom
 github:
   owner: yzg011
-  repo: RyuChan
+  repo: 2026blog
   branch: main
   appId: 4441387
-  encryptKey: KoBariDevYa
+  encryptKey: 
 umami:
   enable: true
   baseUrl: https://umami.131714.xyz
