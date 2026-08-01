@@ -97,7 +97,7 @@ site:
       text: 
       href: /about
       svg: material-symbols:info-outline-rounded
-      target: _selfanime:
+      target: _self
   bilibili:
     uid: '589691048'
   tmdb:
