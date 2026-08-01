@@ -73,7 +73,7 @@ site:
       svg: material-symbols:music-note-rounded
       target: _self
     - id: friend
-      text: 友人帐
+      text: 友链
       href: /friend
       svg: material-symbols:supervisor-account-outline-rounded
       target: _self
