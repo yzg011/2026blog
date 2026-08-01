@@ -58,7 +58,7 @@ site:
       svg: material-symbols:edit-square-outline-rounded
       target: _self
     - id: home
-      text: 首页
+      text: 
       href: /
       svg: material-symbols:home-outline-rounded
       target: _self
