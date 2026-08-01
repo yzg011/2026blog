@@ -65,8 +65,12 @@ export default {
     "group-hover:scale-105",
     // dynamic page container responsive width
     "w-full",
+    "w-5",
+    "h-5",
     "md:max-w-3xl",
     "md:mx-auto",
+    "object-contain",
+    "opacity-50",
   ],
   plugins: [daisyUI, typography, addDynamicIconSelectors(), tailwindcssAnimate],
   daisyui: {
