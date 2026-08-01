@@ -56,7 +56,7 @@ site:
       text: 写作
       href: /write
       svg: material-symbols:edit-square-outline-rounded
-      target: _self
+      target: _self    
     - id: album
       text: 相册
       href: /album

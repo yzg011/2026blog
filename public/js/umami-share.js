@@ -53,6 +53,7 @@
 
   /**
    * 获取 Umami 统计数据
+   * 注意：Umami 2026年6月更新后，stats 端点需要 x-umami-share-context: 1 header，否则返回 401
    * @param {string} baseUrl
    * @param {string} shareId
    * @param {object} queryParams
@@ -62,30 +63,43 @@
     async function doFetch(isRetry = false) {
       const { websiteId, token } = await global.getUmamiShareData(baseUrl, shareId);
       const currentTimestamp = Date.now();
-      
-      // 构建参数，移除默认的 unit: 'hour'，只在 queryParams 没有指定时使用默认值
+
+      // 构建基础参数
+      // 注意: compare 参数只能为 "prev" 或 "yoy"，不能传 false，否则 Umami API 返回 400
       const params = new URLSearchParams({
         startAt: 0,
         endAt: currentTimestamp,
-        // unit: 'hour', // 暂时移除，视情况而定
         timezone: 'Asia/Shanghai',
-        compare: false,
         ...queryParams
       });
-      
+
+      // 移除值为 false/null/undefined 的参数，避免发送无效值
+      for (const [key, value] of [...params.entries()]) {
+        if (value === 'false' || value === 'null' || value === 'undefined') {
+          params.delete(key);
+        }
+      }
+
       const statsUrl = `${baseUrl}/api/websites/${websiteId}/stats?${params.toString()}`;
-      console.log('[Umami] Fetching stats:', statsUrl);
-      
+
       const res = await fetch(statsUrl, {
         headers: {
-          'x-umami-share-token': token
+          'x-umami-share-token': token,
+          'x-umami-share-context': '1'
         }
       });
 
       if (!res.ok) {
         if (res.status === 401 && !isRetry) {
-          console.warn('[Umami] Token expired or invalid, retrying...');
-          global.clearUmamiShareCache(shareId);
+          // 防止并发请求同时刷新 token：只让第一个 401 触发刷新
+          if (!global.__umamiRefreshLock) {
+            global.__umamiRefreshLock = true;
+            console.warn('[Umami] Token expired or invalid, refreshing...');
+            global.clearUmamiShareCache(shareId);
+          }
+          // 等待一个微任务让其他并发请求的刷新完成
+          await Promise.resolve();
+          global.__umamiRefreshLock = false;
           return doFetch(true);
         }
         throw new Error('获取统计数据失败: ' + res.status);
