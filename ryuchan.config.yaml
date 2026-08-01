@@ -93,7 +93,11 @@ site:
       href: /friend
       svg: material-symbols:supervisor-account-outline-rounded
       target: _self
-anime:
+    - id: about
+      text: 
+      href: /about
+      svg: material-symbols:info-outline-rounded
+      target: _selfanime:
   bilibili:
     uid: '589691048'
   tmdb:
