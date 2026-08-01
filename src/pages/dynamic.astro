@@ -7,15 +7,13 @@ import "@fancyapps/ui/dist/fancybox/fancybox.css";
 
 // 构建时仅拉取用户信息，前端分页加载 memo
 const users = await loadMemosUsers();
-const perPage = memosConfig.perPage || 10;
 
 // 将配置安全地传递给前端脚本
 const memosConfigJson = JSON.stringify({
   enable: memosConfig.enable,
   baseUrl: memosConfig.baseUrl,
   token: memosConfig.token,
-  pageSize: memosConfig.pageSize || perPage,
-  perPage,
+  perPage: memosConfig.perPage || 10,
   displayName: memosConfig.displayName || "",
 });
 
@@ -23,7 +21,7 @@ const usersJson = JSON.stringify(users);
 ---
 
 <BaseLayout title={t("dynamicPage")} isIndexed={false}>
-  <div class="px-4 py-8 md:px-6 max-w-4xl mx-auto">
+  <div class="max-w-3xl mx-auto py-8 px-4 md:px-6">
     {/* 顶部信息区 */}
     <section
       class="bg-base-100 rounded-3xl p-6 md:p-8 shadow-lg border border-base-200 mb-8 animate-fade-in-up"
@@ -94,6 +92,9 @@ const usersJson = JSON.stringify(users);
   <script>
     import { Fancybox } from "@fancyapps/ui";
     (window as any).MemoFancybox = Fancybox;
+    if (typeof (window as any).memoBindFancybox === "function") {
+      (window as any).memoBindFancybox();
+    }
   </script>
 
   <script is:inline define:vars={{ memosConfigJson, usersJson }}>
@@ -101,14 +102,16 @@ const usersJson = JSON.stringify(users);
       const config = JSON.parse(memosConfigJson);
       const users = JSON.parse(usersJson);
       const API_BASE = config.baseUrl.replace(/\/$/, "");
-      const PAGE_SIZE = config.pageSize || 10;
+      const PAGE_SIZE = config.perPage || 10;
 
       let pageToken = "";
       let hasMore = true;
       let isLoading = false;
       let allMemos = [];
+      let renderedIds = new Set();
       let currentFilter = { q: "", year: "all" };
-      let fancyboxBound = false;
+      let observer = null;
+      let initialLoaded = false;
 
       const wrap = document.getElementById("memo-list");
       const loadTips = document.getElementById("memo-load-tips");
@@ -196,7 +199,7 @@ const usersJson = JSON.stringify(users);
         const years = Array.from(yearSet).sort((a, b) => Number(b) - Number(a));
 
         const currentValue = yearSelect.value;
-        yearSelect.innerHTML = `<option value="all">全部年份</option>`;
+        yearSelect.innerHTML = `<option value="all">${yearSelect.options[0]?.textContent || "全部年份"}</option>`;
         years.forEach((y) => {
           const option = document.createElement("option");
           option.value = y;
@@ -209,124 +212,90 @@ const usersJson = JSON.stringify(users);
       }
 
       function updateStats() {
-        const visible = allMemos.filter(matchesFilter);
-        if (countEl) countEl.textContent = String(visible.length);
+        if (countEl) countEl.textContent = String(allMemos.length);
       }
 
-      function bindFancybox() {
+      window.memoBindFancybox = function () {
         if (typeof window.MemoFancybox === "undefined") return;
-        if (!fancyboxBound) {
-          window.MemoFancybox.bind('[data-fancybox="memos-gallery"]', {
-            Hash: false,
-            Toolbar: {
-              display: {
-                left: ["infobar"],
-                middle: ["zoomIn", "zoomOut", "toggle1to1", "rotateCCW", "rotateCW", "flipX"],
-                right: ["slideshow", "thumbs", "close"],
-              },
+        window.MemoFancybox.bind('[data-fancybox="memos-gallery"]', {
+          Hash: false,
+          groupAll: true,
+          Toolbar: {
+            display: {
+              left: ["infobar"],
+              middle: ["zoomIn", "zoomOut", "toggle1to1", "rotateCCW", "rotateCW", "flipX"],
+              right: ["slideshow", "thumbs", "close"],
             },
+          },
+        });
+      };
+
+      function buildMemoHtml(memo) {
+        const user = getUser(memo.creator);
+        const year = new Date(memo.createTime).getFullYear();
+        const memoId = memo.name || memo.id;
+
+        let attachmentsHtml = "";
+        const imageAtts = (memo.attachments || []).filter((a) => a.type && a.type.startsWith("image/"));
+        if (imageAtts.length > 0) {
+          attachmentsHtml = `<div class="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-3">`;
+          imageAtts.forEach((att) => {
+            const imgUrl = buildAttachmentUrl(att);
+            attachmentsHtml += `
+              <a
+                href="${imgUrl}"
+                data-fancybox="memos-gallery"
+                data-caption="${escapeHtml(att.filename)}"
+                class="memo-img-thumb group block w-full overflow-hidden rounded-2xl border border-base-200 hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-primary/50"
+                style="aspect-ratio: 4 / 3;"
+              >
+                <img
+                  src="${imgUrl}"
+                  alt="${escapeHtml(att.filename)}"
+                  loading="lazy"
+                  class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  onload="window.memoAdjustPreview(this)"
+                />
+              </a>
+            `;
           });
-          fancyboxBound = true;
-        } else {
-          // 动态新增元素后，重新绑定以包含新元素
-          window.MemoFancybox.unbind('[data-fancybox="memos-gallery"]');
-          window.MemoFancybox.bind('[data-fancybox="memos-gallery"]', {
-            Hash: false,
-            Toolbar: {
-              display: {
-                left: ["infobar"],
-                middle: ["zoomIn", "zoomOut", "toggle1to1", "rotateCCW", "rotateCW", "flipX"],
-                right: ["slideshow", "thumbs", "close"],
-              },
-            },
+          attachmentsHtml += `</div>`;
+        }
+
+        const fileAtts = (memo.attachments || []).filter((a) => !a.type || !a.type.startsWith("image/"));
+        let filesHtml = "";
+        if (fileAtts.length > 0) {
+          filesHtml = `<div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">`;
+          fileAtts.forEach((att) => {
+            const fileUrl = buildAttachmentUrl(att);
+            filesHtml += `
+              <a
+                href="${fileUrl}"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="flex items-center gap-2 p-3 rounded-2xl border border-base-200 hover:bg-base-200/50 transition-colors text-sm"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></svg>
+                <span class="truncate">${escapeHtml(att.filename)}</span>
+              </a>
+            `;
           });
-        }
-      }
-
-      function renderMemos(memos, append = false) {
-        if (!append) {
-          wrap.innerHTML = "";
+          filesHtml += `</div>`;
         }
 
-        if (memos.length === 0 && !append) {
-          wrap.innerHTML = `
-            <div class="bg-base-100 rounded-3xl p-12 text-center text-base-content/60 border border-base-200">
-              <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="w-12 h-12 mx-auto mb-3 opacity-50"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>
-              <p>暂无动态</p>
-            </div>
-          `;
-          return;
+        let tagsHtml = "";
+        if (memo.tags && memo.tags.length > 0) {
+          tagsHtml = `<div class="flex flex-wrap gap-2 mt-4">${memo.tags
+            .map((tag) => `<span class="badge badge-sm badge-outline text-primary border-primary/40">#${escapeHtml(tag)}</span>`)
+            .join("")}</div>`;
         }
 
-        const fragment = document.createDocumentFragment();
-        for (const memo of memos) {
-          const user = getUser(memo.creator);
-          const year = new Date(memo.createTime).getFullYear();
+        const avatarHtml = user.avatar
+          ? `<img src="${user.avatar}" alt="${escapeHtml(user.name)}" class="w-10 h-10 rounded-full object-cover" loading="lazy" />`
+          : `<div class="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-lg">${escapeHtml(user.fallback)}</div>`;
 
-          let attachmentsHtml = "";
-          const imageAtts = (memo.attachments || []).filter((a) => a.type && a.type.startsWith("image/"));
-          if (imageAtts.length > 0) {
-            attachmentsHtml = `<div class="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-3">`;
-            imageAtts.forEach((att) => {
-              const imgUrl = buildAttachmentUrl(att);
-              attachmentsHtml += `
-                <a
-                  href="${imgUrl}"
-                  data-fancybox="memos-gallery"
-                  data-caption="${escapeHtml(att.filename)}"
-                  class="group block w-full overflow-hidden rounded-2xl border border-base-200 hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-primary/50"
-                  style="aspect-ratio: 4 / 3;"
-                >
-                  <img
-                    src="${imgUrl}"
-                    alt="${escapeHtml(att.filename)}"
-                    loading="lazy"
-                    class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    onload="window.memoAdjustPreview(this)"
-                  />
-                </a>
-              `;
-            });
-            attachmentsHtml += `</div>`;
-          }
-
-          const fileAtts = (memo.attachments || []).filter((a) => !a.type || !a.type.startsWith("image/"));
-          let filesHtml = "";
-          if (fileAtts.length > 0) {
-            filesHtml = `<div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">`;
-            fileAtts.forEach((att) => {
-              const fileUrl = buildAttachmentUrl(att);
-              filesHtml += `
-                <a
-                  href="${fileUrl}"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="flex items-center gap-2 p-3 rounded-2xl border border-base-200 hover:bg-base-200/50 transition-colors text-sm"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></svg>
-                  <span class="truncate">${escapeHtml(att.filename)}</span>
-                </a>
-              `;
-            });
-            filesHtml += `</div>`;
-          }
-
-          let tagsHtml = "";
-          if (memo.tags && memo.tags.length > 0) {
-            tagsHtml = `<div class="flex flex-wrap gap-2 mt-4">${memo.tags
-              .map((tag) => `<span class="badge badge-sm badge-outline text-primary border-primary/40">#${escapeHtml(tag)}</span>`)
-              .join("")}</div>`;
-          }
-
-          const avatarHtml = user.avatar
-            ? `<img src="${user.avatar}" alt="${escapeHtml(user.name)}" class="w-10 h-10 rounded-full object-cover" loading="lazy" />`
-            : `<div class="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-lg">${escapeHtml(user.fallback)}</div>`;
-
-          const article = document.createElement("article");
-          article.className = "memo-card bg-base-100 rounded-3xl p-6 md:p-8 shadow-lg border border-base-200 transition-shadow hover:shadow-xl";
-          article.setAttribute("data-memo-id", memo.name || memo.id);
-          article.setAttribute("data-year", String(year));
-          article.innerHTML = `
+        return `
+          <article class="memo-card bg-base-100 rounded-3xl p-6 md:p-8 shadow-lg border border-base-200 transition-shadow hover:shadow-xl" data-memo-id="${escapeHtml(memoId)}" data-year="${year}">
             <header class="flex items-start gap-3 mb-4">
               <div class="flex-shrink-0">${avatarHtml}</div>
               <div class="flex-1 min-w-0">
@@ -339,31 +308,56 @@ const usersJson = JSON.stringify(users);
             ${tagsHtml}
             ${attachmentsHtml}
             ${filesHtml}
-          `;
-          fragment.appendChild(article);
+          </article>
+        `;
+      }
+
+      function renderEmpty() {
+        wrap.innerHTML = `
+          <div class="bg-base-100 rounded-3xl p-12 text-center text-base-content/60 border border-base-200">
+            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="w-12 h-12 mx-auto mb-3 opacity-50"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>
+            <p>暂无动态</p>
+          </div>
+        `;
+      }
+
+      function renderMemos(memos, append = false) {
+        if (!append) {
+          wrap.innerHTML = "";
+          renderedIds.clear();
         }
-        wrap.appendChild(fragment);
-        bindFancybox();
+
+        if (memos.length === 0 && !append) {
+          renderEmpty();
+          return;
+        }
+
+        const newMemos = memos.filter((m) => {
+          const id = m.name || m.id;
+          if (renderedIds.has(id)) return false;
+          renderedIds.add(id);
+          return true;
+        });
+
+        if (newMemos.length === 0) return;
+
+        const html = newMemos.map(buildMemoHtml).join("");
+        wrap.insertAdjacentHTML("beforeend", html);
+        window.memoBindFancybox();
       }
 
       function applyFilter() {
         const visible = allMemos.filter(matchesFilter);
         renderMemos(visible, false);
         updateStats();
-        updateLoadTips();
-        // 筛选后检查是否需要自动加载更多
-        setTimeout(checkAutoLoad, 50);
       }
 
       function updateLoadTips() {
         if (!loadTips) return;
-        const visibleCount = allMemos.filter(matchesFilter).length;
         if (isLoading) {
           loadTips.textContent = "加载中...";
-        } else if (!hasMore && visibleCount > 0) {
-          loadTips.textContent = "没有更多了";
-        } else if (!hasMore && visibleCount === 0) {
-          loadTips.textContent = "";
+        } else if (!hasMore) {
+          loadTips.textContent = allMemos.length > 0 ? "没有更多了" : "";
         } else {
           loadTips.textContent = "上拉加载更多";
         }
@@ -375,14 +369,6 @@ const usersJson = JSON.stringify(users);
         if (isLoading || !hasMore || !config.enable) return;
 
         isLoading = true;
-        if (!isScrollLoad) {
-          wrap.innerHTML = `
-            <div class="bg-base-100 rounded-3xl p-12 text-center text-base-content/60 border border-base-200">
-              <span class="loading loading-spinner loading-lg"></span>
-              <p class="mt-3">加载中...</p>
-            </div>
-          `;
-        }
         updateLoadTips();
 
         fetch(buildApiUrl(), {
@@ -403,22 +389,36 @@ const usersJson = JSON.stringify(users);
             pageToken = nextToken;
 
             if (list.length === 0 && allMemos.length === 0) {
-              wrap.innerHTML = `
-                <div class="bg-base-100 rounded-3xl p-12 text-center text-base-content/60 border border-base-200">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="w-12 h-12 mx-auto mb-3 opacity-50"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>
-                  <p>暂无动态</p>
-                </div>
-              `;
+              renderEmpty();
               updateLoadTips();
               return;
             }
 
             allMemos = allMemos.concat(list);
             updateYearOptions();
-            applyFilter();
+            updateStats();
+
+            if (isScrollLoad) {
+              // 滚动加载：只追加符合当前筛选条件的新 memo
+              const newVisible = list.filter(matchesFilter);
+              renderMemos(newVisible, true);
+
+              // 如果本页没有匹配项但还有更多数据，自动继续加载
+              if (newVisible.length === 0 && hasMore) {
+                setTimeout(() => loadData(true), 50);
+              }
+            } else {
+              // 首次加载或筛选后重置：重新渲染所有匹配项
+              applyFilter();
+            }
+
             updateLoadTips();
-            // 加载后检查页面是否填满
-            setTimeout(checkAutoLoad, 100);
+
+            // 首次加载后如果页面未填满，自动继续加载
+            if (!initialLoaded) {
+              initialLoaded = true;
+              checkAutoLoad();
+            }
           })
           .catch((err) => {
             isLoading = false;
@@ -434,40 +434,32 @@ const usersJson = JSON.stringify(users);
           });
       }
 
-      // ===== 滚动加载 =====
+      // ===== 无限滚动：Intersection Observer =====
 
-      function shouldLoadMore() {
-        if (isLoading || !hasMore) return false;
-        const { scrollTop, scrollHeight, clientHeight } = document.documentElement;
-        return scrollTop + clientHeight >= scrollHeight - 150;
+      function setupObserver() {
+        if (observer) observer.disconnect();
+        if (!loadTips) return;
+
+        observer = new IntersectionObserver(
+          (entries) => {
+            entries.forEach((entry) => {
+              if (entry.isIntersecting && !isLoading && hasMore) {
+                loadData(true);
+              }
+            });
+          },
+          { rootMargin: "0px 0px 200px 0px" }
+        );
+        observer.observe(loadTips);
       }
 
       function checkAutoLoad() {
         if (!hasMore || isLoading) return;
         const { scrollHeight, clientHeight } = document.documentElement;
-        // 如果内容未填满视口，自动加载下一页
-        if (scrollHeight <= clientHeight + 150) {
+        if (scrollHeight <= clientHeight + 100) {
           loadData(true);
         }
       }
-
-      function handleScroll() {
-        if (shouldLoadMore()) {
-          loadData(true);
-        }
-      }
-
-      let scrollTicking = false;
-      function onScrollThrottled() {
-        if (scrollTicking) return;
-        scrollTicking = true;
-        requestAnimationFrame(() => {
-          handleScroll();
-          scrollTicking = false;
-        });
-      }
-
-      window.addEventListener("scroll", onScrollThrottled, { passive: true });
 
       // 竖屏预览图比例适配
       window.memoAdjustPreview = function (img) {
@@ -481,10 +473,14 @@ const usersJson = JSON.stringify(users);
 
       // ===== 事件绑定 =====
 
+      let filterTimeout = null;
       if (searchInput) {
         searchInput.addEventListener("input", () => {
-          currentFilter.q = searchInput.value.trim().toLowerCase();
-          applyFilter();
+          clearTimeout(filterTimeout);
+          filterTimeout = setTimeout(() => {
+            currentFilter.q = searchInput.value.trim().toLowerCase();
+            applyFilter();
+          }, 200);
         });
       }
 
@@ -498,6 +494,7 @@ const usersJson = JSON.stringify(users);
       // ===== 初始化 =====
       if (config.enable) {
         loadData(false);
+        setupObserver();
       } else {
         wrap.innerHTML = `
           <div class="bg-base-100 rounded-3xl p-12 text-center text-base-content/60 border border-base-200">
