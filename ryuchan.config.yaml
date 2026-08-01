@@ -179,10 +179,6 @@ user:
         ariaLabel: QQ
         title: QQ
         svg: ri:qq-line
-      - href: https://vlog.z2m.store/rss.xml
-        ariaLabel: RSS
-        title: RSS
-        svg: ri:rss-fill
       - href: https://work.weixin.qq.com/kfid/kfc90518b0eacba59c3
         title: WeChat
         ariaLabel: WeChat
