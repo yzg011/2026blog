@@ -163,6 +163,14 @@ export interface TranslationLabel {
   categoriesPageDescription: string;
   archivesPageDescription: string;
   backToBlog: string;
+  dynamicPage: string;
+  dynamicPageDescription: string;
+  dynamicSearchPlaceholder: string;
+  allYears: string;
+  totalDynamics: string;
+  noDynamics: string;
+  noMoreDynamics: string;
+  loadingDynamics: string;
 }
 
 export interface LanguageTranslation {
@@ -193,11 +201,12 @@ export interface MusicConfig {
   playlists?: PlaylistEntry[];
 }
 
-import type { UmamiConfig } from "../config";
+import type { UmamiConfig, MemosConfig } from "../config";
 export interface Config {
   site: SiteConfig;
   user: UserConfig;
   umami?: UmamiConfig;
+  memos?: MemosConfig;
   comments?: CommentsConfig;
   anime?: AnimeConfig;
   github?: GithubConfig;

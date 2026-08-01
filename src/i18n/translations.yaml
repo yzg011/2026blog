@@ -47,6 +47,14 @@ en:
     404exploreBlog: Explore our blog
     404browseArchives: Browse archives
     404searchContent: Search content
+    dynamicPage: Dynamic
+    dynamicPageDescription: Capture ideas and daily life on the fly.
+    dynamicSearchPlaceholder: Search dynamic...
+    allYears: All Years
+    totalDynamics: Dynamics
+    noDynamics: No dynamics yet
+    noMoreDynamics: No more dynamics
+    loadingDynamics: Loading...
   months:
     1: January
     2: February
@@ -109,6 +117,14 @@ zh:
     404exploreBlog: 浏览我们的博客
     404browseArchives: 浏览归档
     404searchContent: 搜索内容
+    dynamicPage: 动态
+    dynamicPageDescription: 随手记下此刻的想法与日常。
+    dynamicSearchPlaceholder: 搜索动态...
+    allYears: 全部年份
+    totalDynamics: 动态
+    noDynamics: 暂无动态
+    noMoreDynamics: 没有更多了
+    loadingDynamics: 加载中...
   months:
     1: 一月
     2: 二月

@@ -1,0 +1,166 @@
+---
+import type { MemoItem, MemosAttachment } from "@/lib/load-memos";
+import { DATE_FORMAT } from "@config";
+import dayjs from "@utils/dayjs";
+import { Icon } from "astro-icon/components";
+
+interface Props {
+  memo: MemoItem;
+}
+
+const { memo } = Astro.props;
+const dateStr = dayjs(memo.createTime).format(DATE_FORMAT);
+
+/**
+ * 简单格式化 memo 内容：
+ * 1. 转义 HTML 防 XSS
+ * 2. 自动识别 http(s) URL 转为链接
+ * 3. 保留换行
+ */
+function formatMemoContent(text: string): string {
+  // 1. 先转义 HTML
+  const escaped = text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+
+  // 2. 自动识别 URL → 链接
+  const urlPattern = /(https?:\/\/[^\s<]+)(?![^<]*>)/g;
+  const withLinks = escaped.replace(
+    urlPattern,
+    (url) =>
+      `<a href="${url}" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline break-all">${url}</a>`
+  );
+
+  // 3. 换行 → <br>
+  return withLinks.replace(/\n/g, "<br>");
+}
+
+const html = formatMemoContent(memo.content);
+
+// 头像兜底：使用首字符占位
+const avatarFallback = memo.user.displayName?.[0] ?? memo.user.username?.[0] ?? "?";
+---
+
+<article
+  class="memo-card bg-base-100 rounded-3xl p-6 md:p-8 shadow-lg border border-base-200 transition-shadow hover:shadow-xl"
+  data-memo-id={memo.id}
+  data-year={dayjs(memo.createTime).year()}
+>
+  <header class="flex items-start gap-3 mb-4">
+    <!-- 头像 -->
+    <div class="flex-shrink-0">
+      {memo.user.avatarUrl ? (
+        <img
+          src={memo.user.avatarUrl}
+          alt={memo.user.displayName}
+          class="w-10 h-10 rounded-full object-cover"
+          loading="lazy"
+        />
+      ) : (
+        <div class="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-lg">
+          {avatarFallback}
+        </div>
+      )}
+    </div>
+
+    <!-- 用户名 + 日期 -->
+    <div class="flex-1 min-w-0">
+      <div class="font-medium text-base-content truncate">
+        {memo.user.displayName}
+      </div>
+      <time
+        class="text-sm text-base-content/60 block"
+        datetime={memo.createTime.toISOString()}
+      >
+        {dateStr}
+      </time>
+    </div>
+
+    <!-- 右侧装饰引号 -->
+    <Icon
+      name="lucide:quote"
+      class="w-5 h-5 text-base-content/30 flex-shrink-0"
+    />
+  </header>
+
+  <!-- 正文 -->
+  <div
+    class="memo-content text-base-content/90 leading-relaxed whitespace-pre-wrap break-words"
+    set:html={html}
+  />
+
+  <!-- 标签 -->
+  {memo.tags.length > 0 && (
+    <div class="flex flex-wrap gap-2 mt-4">
+      {memo.tags.map((tag: string) => (
+        <span class="badge badge-sm badge-outline text-primary border-primary/40">
+          #{tag}
+        </span>
+      ))}
+    </div>
+  )}
+
+  <!-- 附件（图片） -->
+  {memo.attachments.length > 0 && (
+    <div class="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-3">
+      {memo.attachments.map((att: MemosAttachment) =>
+        att.type.startsWith("image/") ? (
+          <button
+            type="button"
+            data-lightbox
+            data-src={att.url}
+            data-alt={att.filename}
+            class="group block w-full text-left overflow-hidden rounded-2xl border border-base-200 hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-primary/50"
+          >
+            <img
+              src={att.url}
+              alt={att.filename}
+              loading="lazy"
+              data-memo-preview
+              class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+            />
+          </button>
+        ) : (
+          <a
+            href={att.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="flex items-center gap-2 p-3 rounded-2xl border border-base-200 hover:bg-base-200/50 transition-colors text-sm"
+          >
+            <Icon name="lucide:file" class="w-4 h-4" />
+            <span class="truncate">{att.filename}</span>
+          </a>
+        )
+      )}
+    </div>
+  )}
+</article>
+
+<script is:inline>
+  // 客户端加载完成后，根据图片真实方向调整预览图比例
+  (function () {
+    function adjustPreview(img) {
+      if (!img.naturalWidth || !img.naturalHeight) return;
+      const container = img.closest("[data-lightbox]");
+      if (!container) return;
+      if (img.naturalHeight > img.naturalWidth) {
+        // 竖屏
+        container.style.aspectRatio = "3 / 4";
+      } else {
+        // 横屏
+        container.style.aspectRatio = "4 / 3";
+      }
+    }
+
+    document.querySelectorAll("[data-memo-preview]").forEach((img) => {
+      if (img.complete && img.naturalWidth) {
+        adjustPreview(img);
+      } else {
+        img.addEventListener("load", () => adjustPreview(img), { once: true });
+      }
+    });
+  })();
+</script>

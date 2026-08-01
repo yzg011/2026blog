@@ -137,3 +137,23 @@ export const umamiConfig: UmamiConfig = {
   websiteId: config.umami?.websiteId ?? "",
   timezone: config.umami?.timezone ?? "Asia/Shanghai",
 };
+
+// Memos 配置接口
+export interface MemosConfig {
+  enable: boolean;
+  baseUrl: string;
+  token: string;
+  pageSize: number;
+  perPage: number;
+  displayName: string;
+}
+
+// Memos 配置实例（从配置文件读取）
+export const memosConfig: MemosConfig = {
+  enable: config.memos?.enable ?? false,
+  baseUrl: (config.memos?.baseUrl ?? "").replace(/\/+$/, ""),
+  token: config.memos?.token ?? "",
+  pageSize: config.memos?.pageSize ?? 50,
+  perPage: config.memos?.perPage ?? 10,
+  displayName: config.memos?.displayName ?? "",
+};

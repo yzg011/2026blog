@@ -18,6 +18,8 @@ interface ImportMeta {
 declare module "dayjs" {
   interface Dayjs {
     format: (template?: string) => string;
+    year: () => number;
+    get: (unit: "year" | "month" | "date" | "day" | "hour" | "minute" | "second" | "millisecond") => number;
     locale: {
       (): string;
       (preset: string, object?: Partial<ILocale>): Dayjs;

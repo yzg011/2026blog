@@ -56,7 +56,12 @@ site:
       text: 写作
       href: /write
       svg: material-symbols:edit-square-outline-rounded
-      target: _self    
+      target: _self
+    - id: dynamic
+      text: 动态
+      href: /dynamic
+      svg: material-symbols:chat-bubble-outline-rounded
+      target: _self
     - id: album
       text: 相册
       href: /album
@@ -72,7 +77,6 @@ site:
       href: /friend
       svg: material-symbols:supervisor-account-outline-rounded
       target: _self
-  titleType: image
 anime:
   bilibili:
     uid: '589691048'
@@ -109,6 +113,13 @@ umami:
   shareId: CM4AdfjVYpsnrijc
   websiteId: ed3e8771-0600-4fae-8d45-fb3afc354652
   timezone: Asia/Shanghai
+memos:
+  enable: true
+  baseUrl: https://ss.z2m.store
+  token: memos_pat_IuxhFzgTzvVa3G4CiAzRqd59yzmagVtY
+  pageSize: 50
+  perPage: 10
+  displayName: 深漂小鱼
 user:
   name: Saimen
   description: 一个热爱技术，努力勤奋的人
