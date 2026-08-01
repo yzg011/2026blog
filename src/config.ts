@@ -143,7 +143,6 @@ export interface MemosConfig {
   enable: boolean;
   baseUrl: string;
   token: string;
-  pageSize: number;
   perPage: number;
   displayName: string;
 }
@@ -153,7 +152,6 @@ export const memosConfig: MemosConfig = {
   enable: config.memos?.enable ?? false,
   baseUrl: (config.memos?.baseUrl ?? "").replace(/\/+$/, ""),
   token: config.memos?.token ?? "",
-  pageSize: config.memos?.pageSize ?? 50,
   perPage: config.memos?.perPage ?? 10,
   displayName: config.memos?.displayName ?? "",
 };

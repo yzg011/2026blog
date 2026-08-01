@@ -1,9 +1,10 @@
 ---      
 import { Icon } from "astro-icon/components";      
-import ThemeToggle from "./widgets/ThemeToggle.astro";      
+import ThemeToggle from "./widgets/ThemeToggle.astro";
 import ThemeSelector from "./widgets/ThemeSelector.astro";
 import BannerSettings from "./widgets/BannerSettings.astro";
 import MobileSettings from "./widgets/MobileSettings.astro";
+import DesktopSettings from "./widgets/DesktopSettings.astro";
 import { SITE_TITLE, SITE_MENU, USER_AVATAR, SITE_TITLE_IMAGE, SITE_TITLE_TYPE } from "../config";      
       
 // Get current path to determine active link      
@@ -88,15 +89,21 @@ const typedMenu = SITE_MENU as MenuItem[];
           ))}      
         </div>      
               
-        <!-- 右侧工具栏 -->      
-        <div class="flex items-center space-x-2">      
-          <a href="/config" class="btn btn-ghost btn-circle hover:bg-white/10 text-primary" aria-label="Config">
-            <Icon name="material-symbols:settings-outline" class="w-5 h-5" />
-          </a>
-          <ThemeSelector />
-          <BannerSettings />
-          <!-- 主题切换 -->      
-          <ThemeToggle className="btn btn-ghost btn-circle hover:bg-white/10 text-primary" />      
+        <!-- 右侧工具栏：大屏完整显示，小屏合并 -->
+        <div class="flex items-center space-x-2">
+          <!-- 完整工具栏（xl 及以上显示） -->
+          <div class="hidden xl:flex items-center space-x-2">
+            <a href="/config" class="btn btn-ghost btn-circle hover:bg-white/10 text-primary" aria-label="Config">
+              <Icon name="material-symbols:settings-outline" class="w-5 h-5" />
+            </a>
+            <ThemeSelector />
+            <BannerSettings />
+            <ThemeToggle className="btn btn-ghost btn-circle hover:bg-white/10 text-primary" />
+          </div>
+          <!-- 合并工具栏（xl 以下显示） -->
+          <div class="xl:hidden">
+            <DesktopSettings />
+          </div>
         </div>      
       </div>      
     </div>      

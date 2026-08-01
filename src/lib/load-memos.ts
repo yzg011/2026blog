@@ -81,7 +81,7 @@ function buildAttachmentUrl(uid: string, filename: string): string {
 /** 单页请求 */
 async function fetchMemoPage(pageToken: string): Promise<RawMemoListResponse> {
   const url = new URL(`${memosConfig.baseUrl}/api/v1/memos`);
-  url.searchParams.set("pageSize", String(memosConfig.pageSize));
+  url.searchParams.set("pageSize", String(memosConfig.perPage));
   // 只拉取公开 memo，同时作为隐私防御
   url.searchParams.set("filter", 'visibility == "PUBLIC"');
   if (pageToken) {
@@ -197,7 +197,7 @@ export async function loadMemos(): Promise<MemoItem[]> {
   }
 }
 
-/** 仅加载用户映射，供前端分页页面使用 */
+/** 仅加载用户映射，供前端分页页面使用（过滤掉 base64 头像以减小体积） */
 export async function loadMemosUsers(): Promise<Record<string, MemosUser>> {
   if (!memosConfig.enable || !memosConfig.baseUrl || !memosConfig.token) {
     return {};
@@ -206,10 +206,15 @@ export async function loadMemosUsers(): Promise<Record<string, MemosUser>> {
     const map = await fetchUserMap();
     const result: Record<string, MemosUser> = {};
     map.forEach((user, key) => {
+      let avatarUrl = user.avatarUrl ?? "";
+      // 过滤掉体积巨大的 base64 data URL，回退到首字母头像
+      if (avatarUrl.startsWith("data:")) {
+        avatarUrl = "";
+      }
       result[key] = {
         username: user.username,
         displayName: user.displayName || user.nickname || user.username,
-        avatarUrl: user.avatarUrl ?? "",
+        avatarUrl,
       };
     });
     return result;

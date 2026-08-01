@@ -117,7 +117,6 @@ memos:
   enable: true
   baseUrl: https://ss.z2m.store
   token: memos_pat_IuxhFzgTzvVa3G4CiAzRqd59yzmagVtY
-  pageSize: 50
   perPage: 10
   displayName: 深漂小鱼
 user:

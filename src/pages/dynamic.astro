@@ -102,7 +102,7 @@ const usersJson = JSON.stringify(users);
       const config = JSON.parse(memosConfigJson);
       const users = JSON.parse(usersJson);
       const API_BASE = config.baseUrl.replace(/\/$/, "");
-      const PAGE_SIZE = config.perPage || 10;
+      const PER_PAGE = config.perPage || 10;
 
       let pageToken = "";
       let hasMore = true;
@@ -110,8 +110,7 @@ const usersJson = JSON.stringify(users);
       let allMemos = [];
       let renderedIds = new Set();
       let currentFilter = { q: "", year: "all" };
-      let observer = null;
-      let initialLoaded = false;
+      let totalSize = 0;
 
       const wrap = document.getElementById("memo-list");
       const loadTips = document.getElementById("memo-load-tips");
@@ -164,7 +163,7 @@ const usersJson = JSON.stringify(users);
       }
 
       function buildApiUrl() {
-        let url = `${API_BASE}/api/v1/memos?pageSize=${PAGE_SIZE}&filter=visibility%20%3D%3D%20%22PUBLIC%22`;
+        let url = `${API_BASE}/api/v1/memos?pageSize=${PER_PAGE}&filter=visibility%20%3D%3D%20%22PUBLIC%22`;
         if (pageToken) {
           url += `&pageToken=${encodeURIComponent(pageToken)}`;
         }
@@ -212,7 +211,7 @@ const usersJson = JSON.stringify(users);
       }
 
       function updateStats() {
-        if (countEl) countEl.textContent = String(allMemos.length);
+        if (countEl) countEl.textContent = String(totalSize || allMemos.length);
       }
 
       window.memoBindFancybox = function () {
@@ -238,7 +237,7 @@ const usersJson = JSON.stringify(users);
         let attachmentsHtml = "";
         const imageAtts = (memo.attachments || []).filter((a) => a.type && a.type.startsWith("image/"));
         if (imageAtts.length > 0) {
-          attachmentsHtml = `<div class="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-3">`;
+          attachmentsHtml = `<div class="mt-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">`;
           imageAtts.forEach((att) => {
             const imgUrl = buildAttachmentUrl(att);
             attachmentsHtml += `
@@ -295,7 +294,7 @@ const usersJson = JSON.stringify(users);
           : `<div class="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-lg">${escapeHtml(user.fallback)}</div>`;
 
         return `
-          <article class="memo-card bg-base-100 rounded-3xl p-6 md:p-8 shadow-lg border border-base-200 transition-shadow hover:shadow-xl" data-memo-id="${escapeHtml(memoId)}" data-year="${year}">
+          <article class="memo-card bg-base-100 rounded-3xl p-4 md:p-8 shadow-lg border border-base-200 transition-shadow hover:shadow-xl max-w-full overflow-hidden" data-memo-id="${escapeHtml(memoId)}" data-year="${year}">
             <header class="flex items-start gap-3 mb-4">
               <div class="flex-shrink-0">${avatarHtml}</div>
               <div class="flex-1 min-w-0">
@@ -304,7 +303,7 @@ const usersJson = JSON.stringify(users);
               </div>
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 text-base-content/30 flex-shrink-0"><path d="M16 3a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2 1 1 0 0 1 1 1v1a2 2 0 0 1-2 2 1 1 0 0 0-1 1v2a1 1 0 0 0 1 1 6 6 0 0 0 6-6V5a2 2 0 0 0-2-2z"/><path d="M5 3a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2 1 1 0 0 1 1 1v1a2 2 0 0 1-2 2 1 1 0 0 0-1 1v2a1 1 0 0 0 1 1 6 6 0 0 0 6-6V5a2 2 0 0 0-2-2z"/></svg>
             </header>
-            <div class="memo-content text-base-content/90 leading-relaxed whitespace-pre-wrap break-words">${formatContent(memo.content)}</div>
+            <div class="memo-content text-base-content/90 leading-relaxed whitespace-pre-wrap break-words max-w-full overflow-hidden">${formatContent(memo.content)}</div>
             ${tagsHtml}
             ${attachmentsHtml}
             ${filesHtml}
@@ -394,6 +393,9 @@ const usersJson = JSON.stringify(users);
               return;
             }
 
+            if (typeof data.totalSize === "number") {
+              totalSize = data.totalSize;
+            }
             allMemos = allMemos.concat(list);
             updateYearOptions();
             updateStats();
@@ -402,23 +404,12 @@ const usersJson = JSON.stringify(users);
               // 滚动加载：只追加符合当前筛选条件的新 memo
               const newVisible = list.filter(matchesFilter);
               renderMemos(newVisible, true);
-
-              // 如果本页没有匹配项但还有更多数据，自动继续加载
-              if (newVisible.length === 0 && hasMore) {
-                setTimeout(() => loadData(true), 50);
-              }
             } else {
               // 首次加载或筛选后重置：重新渲染所有匹配项
               applyFilter();
             }
 
             updateLoadTips();
-
-            // 首次加载后如果页面未填满，自动继续加载
-            if (!initialLoaded) {
-              initialLoaded = true;
-              checkAutoLoad();
-            }
           })
           .catch((err) => {
             isLoading = false;
@@ -434,31 +425,19 @@ const usersJson = JSON.stringify(users);
           });
       }
 
-      // ===== 无限滚动：Intersection Observer =====
+      // ===== 无限滚动：监听 scroll 事件，只在用户滚动到底部时加载 =====
 
-      function setupObserver() {
-        if (observer) observer.disconnect();
-        if (!loadTips) return;
-
-        observer = new IntersectionObserver(
-          (entries) => {
-            entries.forEach((entry) => {
-              if (entry.isIntersecting && !isLoading && hasMore) {
-                loadData(true);
-              }
-            });
-          },
-          { rootMargin: "0px 0px 200px 0px" }
-        );
-        observer.observe(loadTips);
-      }
-
-      function checkAutoLoad() {
-        if (!hasMore || isLoading) return;
-        const { scrollHeight, clientHeight } = document.documentElement;
-        if (scrollHeight <= clientHeight + 100) {
+      function handleScroll() {
+        if (isLoading || !hasMore) return;
+        const { scrollTop, scrollHeight, clientHeight } = document.documentElement;
+        // 距离底部 200px 内触发加载
+        if (scrollTop + clientHeight >= scrollHeight - 200) {
           loadData(true);
         }
+      }
+
+      function setupScrollListener() {
+        window.addEventListener("scroll", handleScroll, { passive: true });
       }
 
       // 竖屏预览图比例适配
@@ -494,7 +473,7 @@ const usersJson = JSON.stringify(users);
       // ===== 初始化 =====
       if (config.enable) {
         loadData(false);
-        setupObserver();
+        setupScrollListener();
       } else {
         wrap.innerHTML = `
           <div class="bg-base-100 rounded-3xl p-12 text-center text-base-content/60 border border-base-200">
