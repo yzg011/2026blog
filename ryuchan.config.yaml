@@ -53,7 +53,7 @@ site:
       subtitle: 沉浸式享受音乐时光
   menu:
     - id: write
-      text: 写作
+      text: 
       href: /write
       svg: material-symbols:edit-square-outline-rounded
       target: _self
