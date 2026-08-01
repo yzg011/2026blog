@@ -42,9 +42,12 @@ export default {
     "sm:grid-cols-2",
     "md:grid-cols-3",
     "max-w-full",
+    "min-w-0",
     "overflow-hidden",
+    "overflow-x-hidden",
     "whitespace-pre-wrap",
     "break-words",
+    "flex-shrink-0",
     "badge-outline",
     "border-primary/40",
     "text-primary",
@@ -60,6 +63,10 @@ export default {
     "transition-transform",
     "duration-500",
     "group-hover:scale-105",
+    // dynamic page container responsive width
+    "w-full",
+    "md:max-w-3xl",
+    "md:mx-auto",
   ],
   plugins: [daisyUI, typography, addDynamicIconSelectors(), tailwindcssAnimate],
   daisyui: {

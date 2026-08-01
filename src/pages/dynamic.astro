@@ -21,17 +21,17 @@ const usersJson = JSON.stringify(users);
 ---
 
 <BaseLayout title={t("dynamicPage")} isIndexed={false}>
-  <div class="max-w-3xl mx-auto py-8 px-4 md:px-6">
+  <div class="w-full md:max-w-3xl md:mx-auto py-8 px-4 md:px-6 overflow-x-hidden min-w-0">
     {/* 顶部信息区 */}
     <section
       class="bg-base-100 rounded-3xl p-6 md:p-8 shadow-lg border border-base-200 mb-8 animate-fade-in-up"
     >
-      <div class="flex items-start justify-between gap-4 mb-4">
-        <div class="flex items-center gap-3">
+      <div class="flex items-start justify-between gap-4 mb-4 min-w-0">
+        <div class="flex items-center gap-3 min-w-0">
           <div class="w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center flex-shrink-0">
             <Icon name="material-symbols:chat-bubble-outline-rounded" class="w-7 h-7" />
           </div>
-          <div>
+          <div class="min-w-0">
             <h1 class="text-2xl md:text-3xl font-bold">{t("dynamicPage")}</h1>
             <p class="text-base-content/70 mt-1">{t("dynamicPageDescription")}</p>
           </div>
@@ -45,8 +45,8 @@ const usersJson = JSON.stringify(users);
       </div>
 
       {/* 搜索 + 年份筛选 */}
-      <div class="flex flex-col sm:flex-row gap-3">
-        <div class="relative flex-1">
+      <div class="flex flex-col sm:flex-row gap-3 min-w-0">
+        <div class="relative flex-1 min-w-0">
           <Icon
             name="lucide:search"
             class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-base-content/50"
@@ -237,7 +237,7 @@ const usersJson = JSON.stringify(users);
         let attachmentsHtml = "";
         const imageAtts = (memo.attachments || []).filter((a) => a.type && a.type.startsWith("image/"));
         if (imageAtts.length > 0) {
-          attachmentsHtml = `<div class="mt-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">`;
+          attachmentsHtml = `<div class="mt-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 min-w-0">`;
           imageAtts.forEach((att) => {
             const imgUrl = buildAttachmentUrl(att);
             attachmentsHtml += `
@@ -264,7 +264,7 @@ const usersJson = JSON.stringify(users);
         const fileAtts = (memo.attachments || []).filter((a) => !a.type || !a.type.startsWith("image/"));
         let filesHtml = "";
         if (fileAtts.length > 0) {
-          filesHtml = `<div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">`;
+          filesHtml = `<div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3 min-w-0">`;
           fileAtts.forEach((att) => {
             const fileUrl = buildAttachmentUrl(att);
             filesHtml += `
@@ -272,10 +272,10 @@ const usersJson = JSON.stringify(users);
                 href="${fileUrl}"
                 target="_blank"
                 rel="noopener noreferrer"
-                class="flex items-center gap-2 p-3 rounded-2xl border border-base-200 hover:bg-base-200/50 transition-colors text-sm"
+                class="flex items-center gap-2 p-3 rounded-2xl border border-base-200 hover:bg-base-200/50 transition-colors text-sm min-w-0"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></svg>
-                <span class="truncate">${escapeHtml(att.filename)}</span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="flex-shrink-0"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></svg>
+                <span class="truncate min-w-0">${escapeHtml(att.filename)}</span>
               </a>
             `;
           });
@@ -294,8 +294,8 @@ const usersJson = JSON.stringify(users);
           : `<div class="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-lg">${escapeHtml(user.fallback)}</div>`;
 
         return `
-          <article class="memo-card bg-base-100 rounded-3xl p-4 md:p-8 shadow-lg border border-base-200 transition-shadow hover:shadow-xl max-w-full overflow-hidden" data-memo-id="${escapeHtml(memoId)}" data-year="${year}">
-            <header class="flex items-start gap-3 mb-4">
+          <article class="memo-card bg-base-100 rounded-3xl p-4 md:p-8 shadow-lg border border-base-200 transition-shadow hover:shadow-xl max-w-full min-w-0 overflow-hidden" data-memo-id="${escapeHtml(memoId)}" data-year="${year}">
+            <header class="flex items-start gap-3 mb-4 min-w-0">
               <div class="flex-shrink-0">${avatarHtml}</div>
               <div class="flex-1 min-w-0">
                 <div class="font-medium text-base-content truncate">${escapeHtml(user.name)}</div>
@@ -303,7 +303,7 @@ const usersJson = JSON.stringify(users);
               </div>
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 text-base-content/30 flex-shrink-0"><path d="M16 3a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2 1 1 0 0 1 1 1v1a2 2 0 0 1-2 2 1 1 0 0 0-1 1v2a1 1 0 0 0 1 1 6 6 0 0 0 6-6V5a2 2 0 0 0-2-2z"/><path d="M5 3a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2 1 1 0 0 1 1 1v1a2 2 0 0 1-2 2 1 1 0 0 0-1 1v2a1 1 0 0 0 1 1 6 6 0 0 0 6-6V5a2 2 0 0 0-2-2z"/></svg>
             </header>
-            <div class="memo-content text-base-content/90 leading-relaxed whitespace-pre-wrap break-words max-w-full overflow-hidden">${formatContent(memo.content)}</div>
+            <div class="memo-content text-base-content/90 leading-relaxed whitespace-pre-wrap break-words max-w-full min-w-0 overflow-hidden">${formatContent(memo.content)}</div>
             ${tagsHtml}
             ${attachmentsHtml}
             ${filesHtml}
