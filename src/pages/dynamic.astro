@@ -20,7 +20,7 @@ const memosConfigJson = JSON.stringify({
 const usersJson = JSON.stringify(users);
 ---
 
-<BaseLayout title={t("dynamicPage")} isIndexed={false}>
+<BaseLayout title={t("label.dynamicPage")} isIndexed={false}>
   <div class="w-full md:max-w-3xl md:mx-auto py-8 px-4 md:px-6 overflow-x-hidden min-w-0">
     {/* 顶部信息区 */}
     <section
@@ -32,14 +32,17 @@ const usersJson = JSON.stringify(users);
             <Icon name="material-symbols:chat-bubble-outline-rounded" class="w-7 h-7" />
           </div>
           <div class="min-w-0">
-            <h1 class="text-2xl md:text-3xl font-bold">{t("dynamicPage")}</h1>
-            <p class="text-base-content/70 mt-1">{t("dynamicPageDescription")}</p>
+            <h1 class="text-2xl md:text-3xl font-bold">{t("label.dynamicPage")}</h1>
+            <p class="text-base-content/70 mt-1">{t("label.dynamicPageDescription")}</p>
           </div>
         </div>
         {memosConfig.enable && (
-          <div class="flex items-center gap-1.5 text-primary font-bold text-lg whitespace-nowrap flex-shrink-0">
+          <div
+            class="flex items-center gap-1.5 text-primary font-bold text-lg whitespace-nowrap flex-shrink-0"
+            title={t("label.totalDynamics")}
+          >
+            <Icon name="lucide:pen-line" class="w-5 h-5" />
             <span id="memo-count">0</span>
-            <span>{t("totalDynamics")}</span>
           </div>
         )}
       </div>
@@ -54,7 +57,7 @@ const usersJson = JSON.stringify(users);
           <input
             id="memo-search"
             type="search"
-            placeholder={t("dynamicSearchPlaceholder")}
+            placeholder={t("label.dynamicSearchPlaceholder")}
             class="input input-bordered w-full pl-10 pr-4 rounded-full"
             autocomplete="off"
           />
@@ -68,7 +71,7 @@ const usersJson = JSON.stringify(users);
             id="memo-year"
             class="select select-bordered w-full pl-10 rounded-full appearance-none"
           >
-            <option value="all">{t("allYears")}</option>
+            <option value="all">{t("label.allYears")}</option>
           </select>
         </div>
       </div>
@@ -78,13 +81,13 @@ const usersJson = JSON.stringify(users);
     <div id="memo-list" class="space-y-6">
       <div class="bg-base-100 rounded-3xl p-12 text-center text-base-content/60 border border-base-200">
         <span class="loading loading-spinner loading-lg"></span>
-        <p class="mt-3">{t("loadingDynamics")}</p>
+        <p class="mt-3">{t("label.loadingDynamics")}</p>
       </div>
     </div>
 
     {/* 底部加载提示 */}
     <div id="memo-load-tips" class="py-8 text-center text-base-content/50">
-      {t("loadingDynamics")}
+      {t("label.loadingDynamics")}
     </div>
   </div>
 
