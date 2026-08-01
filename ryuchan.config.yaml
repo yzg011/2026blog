@@ -58,7 +58,7 @@ site:
       svg: material-symbols:edit-square-outline-rounded
       target: _self
     - id: home
-      text: 
+      text: null
       href: /
       svg: material-symbols:home-outline-rounded
       target: _self
@@ -94,7 +94,7 @@ site:
       svg: material-symbols:supervisor-account-outline-rounded
       target: _self
     - id: about
-      text: 
+      text: null
       href: /about
       svg: material-symbols:info-outline-rounded
       target: _self
