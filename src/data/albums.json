@@ -23,25 +23,42 @@
     "icon": "💥",
     "photos": [
       {
-        "src": "https://pic.z2m.store/v2/uECuDJW.jpeg",
-        "variant": "9x16",
-        "title": "uECuDJW"
+        "src": "/image/albums/电锯人-0-1785645054485.png",
+        "variant": "4x5",
+        "title": "IMG_0124"
       },
       {
-        "src": "https://pic.z2m.store/v2/2jMVB68.jpeg",
-        "variant": "9x16",
-        "title": "2jMVB68"
-      },
-      {
-        "src": "https://pic.z2m.store/v2/jt9TOxD.jpeg",
-        "variant": "9x16",
-        "title": "jt9TOxD"
-      },
-      {
-        "src": "https://pic.z2m.store/v2/qpWJ9lZ.jpeg",
+        "src": "/image/albums/8e3d6f9a-1-1785645051684.png",
         "variant": "4x3",
-        "title": "qpWJ9lZ"
+        "title": "63a37f9a00c3458aa0c77920df22600c.jpeg~tplv-a9rns2rl98-ppe_ds_wm_1_6_flow_b_3_RG91YmFvMDIxTk5BMDAxMjYwNzE4Mg=="
       }
     ]
+  },
+  {
+    "id": "b6d080dc",
+    "date": "2026-07-31",
+    "event": "新相册",
+    "title": "",
+    "description": "",
+    "icon": "📷",
+    "photos": []
+  },
+  {
+    "id": "90ea962f",
+    "date": "2026-08-01",
+    "event": "新相册",
+    "title": "",
+    "description": "",
+    "icon": "📷",
+    "photos": []
+  },
+  {
+    "id": "4574c6f5",
+    "date": "2026-08-01",
+    "event": "新相册",
+    "title": "",
+    "description": "",
+    "icon": "📷",
+    "photos": []
   }
 ]
