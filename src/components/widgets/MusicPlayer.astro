@@ -33,7 +33,9 @@ const lrcUrl = currentSrc ? currentSrc.replace(/\.[^/.]+$/, ".lrc") : "";
 const playlistData = list ? JSON.stringify(list) : "[]";
 const playlistListData = playlists ? JSON.stringify(playlists) : "[]";
 const playlistSongsData = JSON.stringify(playlistSongs);
-const DEFAULT_COVER = "https://music.apple.com/assets/product/1000/images/default-cover-icon-d36802.svg";
+
+// ========== 修改这里：填入你的【预定于封面】完整地址 ==========
+const DEFAULT_COVER = "https://img.z2m.store/file/public/1778862620159_g.png";
 ---
 
 <div class="music-player-widget animate-in fade-in slide-in-from-bottom-4 duration-500" data-src={currentSrc} data-lrc={lrcUrl} data-title={currentTitle} data-artist={currentArtist} data-cover={currentCover} data-playlist={playlistData} data-playlist-list={playlistListData} data-playlist-songs={playlistSongsData}>
