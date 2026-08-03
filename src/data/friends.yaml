@@ -8,13 +8,13 @@
   description: Please let me have better code.
   url: https://blog.shiyangya.dpdns.org
   badge: 室友
-- name: kuncode
-  avatar: https://www.kuncodeascension.fun/img/logo.jpg
-  description: 代码飞升
-  url: https://www.kuncodeascension.fun
-  badge: 邻居
 - name: Nywerya
   avatar: https://blog.nywerya.xyz/profile.png
   description: 喜欢音乐,绘画,ACG,编程,硬件,设计,建模,东方Project
   url: https://blog.nywerya.xyz
   badge: 邻居
+- name: 个人博客
+  avatar: /images/friends/avatar-3.png
+  description: ''
+  url: https://blog.z2m.store
+  badge: 博主
