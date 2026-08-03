@@ -1848,14 +1848,7 @@
             "lrc": "https://meting.mikus.ink/api?server=netease&type=lrc&id=2723327157",
             "duration": "04:29"
         },
-        {
-            "title": "独角兽",
-            "artist": "告五人",
-            "cover": "https://p2.music.126.net/hTfEeER_YfHLb_2RvtrXrQ==/109951168110801977.jpg",
-            "url": "https://meting.mikus.ink/api?server=netease&type=url&id=511920319",
-            "lrc": "https://meting.mikus.ink/api?server=netease&type=lrc&id=511920319",
-            "duration": "06:39"
-        },
+
         {
             "title": "鹰",
             "artist": "告五人",
@@ -3816,14 +3809,7 @@
                 "lrc": "https://meting.mikus.ink/api?server=netease&type=lrc&id=2723327157",
                 "duration": "04:29"
             },
-            {
-                "title": "独角兽",
-                "artist": "告五人",
-                "cover": "https://p2.music.126.net/hTfEeER_YfHLb_2RvtrXrQ==/109951168110801977.jpg",
-                "url": "https://meting.mikus.ink/api?server=netease&type=url&id=511920319",
-                "lrc": "https://meting.mikus.ink/api?server=netease&type=lrc&id=511920319",
-                "duration": "06:39"
-            },
+
             {
                 "title": "鹰",
                 "artist": "告五人",
