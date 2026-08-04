@@ -154,6 +154,10 @@ user:
         title: WeChat
         ariaLabel: WeChat
         svg: ri:wechat-fill
+      - href: https://t.me/yzg011
+        title: Telegram
+        ariaLabel: Telegram
+        svg: ri:telegram-line
       - href: https://vlog.z2m.store/rss.xml
         title: RSS
         ariaLabel: RSS
@@ -172,6 +176,10 @@ user:
         ariaLabel: QQ
         title: QQ
         svg: ri:qq-line
+      - href: https://t.me/yzg011
+        title: Telegram
+        ariaLabel: Telegram
+        svg: ri:telegram-line
       - href: https://work.weixin.qq.com/kfid/kfc90518b0eacba59c3
         title: WeChat
         ariaLabel: WeChat
