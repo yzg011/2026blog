@@ -3,7 +3,7 @@
         {
             "title": "水仙十字安眠曲 A Narcissus Lullaby",
             "artist": "HOYO-MiX",
-            "cover": "https://p1.music.126.net/vkLKNH2WpfYh4p4ACRRYOg==/109951169367650385.jpg",
+            "cover": "https://p2.music.126.net/vkLKNH2WpfYh4p4ACRRYOg==/109951169367650385.jpg",
             "url": "https://meting.mikus.ink/api?server=netease&type=url&id=2130083960",
             "lrc": "https://meting.mikus.ink/api?server=netease&type=lrc&id=2130083960",
             "duration": "02:03"
@@ -11,7 +11,7 @@
         {
             "title": "小半",
             "artist": "陈粒",
-            "cover": "https://p1.music.126.net/HQxTggMCB7AHUXN-ZFEtmA==/1371091013186741.jpg",
+            "cover": "https://p2.music.126.net/HQxTggMCB7AHUXN-ZFEtmA==/1371091013186741.jpg",
             "url": "https://meting.mikus.ink/api?server=netease&type=url&id=421423806",
             "lrc": "https://meting.mikus.ink/api?server=netease&type=lrc&id=421423806",
             "duration": "04:57"
@@ -19,7 +19,7 @@
         {
             "title": "走马",
             "artist": "陈粒",
-            "cover": "https://p1.music.126.net/VuJFMbXzpAProbJPoXLv7g==/7721870161993398.jpg",
+            "cover": "https://p2.music.126.net/VuJFMbXzpAProbJPoXLv7g==/7721870161993398.jpg",
             "url": "https://meting.mikus.ink/api?server=netease&type=url&id=30431367",
             "lrc": "https://meting.mikus.ink/api?server=netease&type=lrc&id=30431367",
             "duration": "03:55"
@@ -27,7 +27,7 @@
         {
             "title": "后来的我们",
             "artist": "五月天",
-            "cover": "https://p1.music.126.net/lt4R_XbCZsT-yzRfWs9VfQ==/3434874331529456.jpg",
+            "cover": "https://p2.music.126.net/lt4R_XbCZsT-yzRfWs9VfQ==/3434874331529456.jpg",
             "url": "https://meting.mikus.ink/api?server=netease&type=url&id=422104138",
             "lrc": "https://meting.mikus.ink/api?server=netease&type=lrc&id=422104138",
             "duration": "05:46"
@@ -35,7 +35,7 @@
         {
             "title": "夜车",
             "artist": "曾轶可",
-            "cover": "https://p1.music.126.net/s7Cn8bl21KY7kGiBWMdaFg==/109951163105666561.jpg",
+            "cover": "https://p2.music.126.net/s7Cn8bl21KY7kGiBWMdaFg==/109951163105666561.jpg",
             "url": "https://meting.mikus.ink/api?server=netease&type=url&id=340376",
             "lrc": "https://meting.mikus.ink/api?server=netease&type=lrc&id=340376",
             "duration": "03:11"
@@ -1848,7 +1848,14 @@
             "lrc": "https://meting.mikus.ink/api?server=netease&type=lrc&id=2723327157",
             "duration": "04:29"
         },
-
+        {
+            "title": "独角兽",
+            "artist": "告五人",
+            "cover": "https://p2.music.126.net/hTfEeER_YfHLb_2RvtrXrQ==/109951168110801977.jpg",
+            "url": "https://meting.mikus.ink/api?server=netease&type=url&id=511920319",
+            "lrc": "https://meting.mikus.ink/api?server=netease&type=lrc&id=511920319",
+            "duration": "06:39"
+        },
         {
             "title": "鹰",
             "artist": "告五人",
@@ -1958,7 +1965,7 @@
             {
                 "title": "水仙十字安眠曲 A Narcissus Lullaby",
                 "artist": "HOYO-MiX",
-                "cover": "https://p1.music.126.net/vkLKNH2WpfYh4p4ACRRYOg==/109951169367650385.jpg",
+                "cover": "https://p2.music.126.net/vkLKNH2WpfYh4p4ACRRYOg==/109951169367650385.jpg",
                 "url": "https://meting.mikus.ink/api?server=netease&type=url&id=2130083960",
                 "lrc": "https://meting.mikus.ink/api?server=netease&type=lrc&id=2130083960",
                 "duration": "02:03"
@@ -1966,7 +1973,7 @@
             {
                 "title": "小半",
                 "artist": "陈粒",
-                "cover": "https://p1.music.126.net/HQxTggMCB7AHUXN-ZFEtmA==/1371091013186741.jpg",
+                "cover": "https://p2.music.126.net/HQxTggMCB7AHUXN-ZFEtmA==/1371091013186741.jpg",
                 "url": "https://meting.mikus.ink/api?server=netease&type=url&id=421423806",
                 "lrc": "https://meting.mikus.ink/api?server=netease&type=lrc&id=421423806",
                 "duration": "04:57"
@@ -1974,7 +1981,7 @@
             {
                 "title": "走马",
                 "artist": "陈粒",
-                "cover": "https://p1.music.126.net/VuJFMbXzpAProbJPoXLv7g==/7721870161993398.jpg",
+                "cover": "https://p2.music.126.net/VuJFMbXzpAProbJPoXLv7g==/7721870161993398.jpg",
                 "url": "https://meting.mikus.ink/api?server=netease&type=url&id=30431367",
                 "lrc": "https://meting.mikus.ink/api?server=netease&type=lrc&id=30431367",
                 "duration": "03:55"
@@ -1982,7 +1989,7 @@
             {
                 "title": "后来的我们",
                 "artist": "五月天",
-                "cover": "https://p1.music.126.net/lt4R_XbCZsT-yzRfWs9VfQ==/3434874331529456.jpg",
+                "cover": "https://p2.music.126.net/lt4R_XbCZsT-yzRfWs9VfQ==/3434874331529456.jpg",
                 "url": "https://meting.mikus.ink/api?server=netease&type=url&id=422104138",
                 "lrc": "https://meting.mikus.ink/api?server=netease&type=lrc&id=422104138",
                 "duration": "05:46"
@@ -1990,7 +1997,7 @@
             {
                 "title": "夜车",
                 "artist": "曾轶可",
-                "cover": "https://p1.music.126.net/s7Cn8bl21KY7kGiBWMdaFg==/109951163105666561.jpg",
+                "cover": "https://p2.music.126.net/s7Cn8bl21KY7kGiBWMdaFg==/109951163105666561.jpg",
                 "url": "https://meting.mikus.ink/api?server=netease&type=url&id=340376",
                 "lrc": "https://meting.mikus.ink/api?server=netease&type=lrc&id=340376",
                 "duration": "03:11"
@@ -3809,7 +3816,14 @@
                 "lrc": "https://meting.mikus.ink/api?server=netease&type=lrc&id=2723327157",
                 "duration": "04:29"
             },
-
+            {
+                "title": "独角兽",
+                "artist": "告五人",
+                "cover": "https://p2.music.126.net/hTfEeER_YfHLb_2RvtrXrQ==/109951168110801977.jpg",
+                "url": "https://meting.mikus.ink/api?server=netease&type=url&id=511920319",
+                "lrc": "https://meting.mikus.ink/api?server=netease&type=lrc&id=511920319",
+                "duration": "06:39"
+            },
             {
                 "title": "鹰",
                 "artist": "告五人",
