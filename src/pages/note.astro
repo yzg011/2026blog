@@ -1,0 +1,1651 @@
+---
+// 便签墙（Waline 版）Astro 页面
+// 用法：放到博客的 src/pages/ 目录下，例如 src/pages/note-wall.astro
+// 这是一个完整的独立页面（自带 <html>/<head>/<body>），不使用博客 Layout，
+// 因为便签墙需要独占整个视口（fixed 定位 + overflow: hidden）。
+// 如果想嵌进博客布局，需要自行剥离 html/head/body 并处理 body 样式冲突。
+const pageTitle = 'ZY知识库-便签墙'
+---
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>{pageTitle}</title>
+    <style is:global>
+        :root {
+            /* 过渡动画 */
+            --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            --transition-fast: all 0.2s ease;
+            --transition-slow: all 0.5s ease;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background-image: linear-gradient(0deg, #eee 1px, transparent 0),
+            linear-gradient(90deg, #eee 1px, transparent 0);
+            background-size: 30px 30px;
+            color: #333;
+            min-height: 100dvh;
+            overflow: hidden;
+        }
+
+        body.is-mobile {
+            overflow-y: auto;
+        }
+
+        #board {
+            position: relative;
+            width: 100vw;
+            height: 100dvh;
+            overflow: hidden;
+        }
+
+        body.is-mobile #board {
+            height: auto;
+            min-height: 100dvh;
+        }
+
+        .card {
+            position: absolute;
+            width: 220px;
+            border-radius: 12px;
+            box-shadow: 0 16px 35px rgba(0, 0, 0, 0.2);
+            background: #fff;
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+            transform-origin: center;
+            transition: transform 0.35s ease, opacity 0.35s ease, left 0.35s ease,
+            top 0.35s ease, width 0.35s ease, height 0.35s ease,
+            border-radius 0.35s ease;
+        }
+
+        .card.dragging {
+            transition: none;
+            box-shadow: 0 22px 45px rgba(0, 0, 0, 0.35);
+        }
+
+        .card.maximized {
+            box-shadow: 0 28px 60px rgba(0, 0, 0, 0.4);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 12px;
+            background: rgba(255, 255, 255, 0.7);
+            cursor: grab;
+            user-select: none;
+            touch-action: none;
+        }
+
+        .card-header.dragging {
+            cursor: grabbing;
+        }
+
+        .window-controls {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .window-controls .control {
+            position: relative;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            background: #ccc;
+            cursor: pointer;
+            outline: none;
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .window-controls .control.close {
+            background: #ff5f57;
+            border-color: #e0443e;
+        }
+
+        .window-controls .control.minimize {
+            background: #febb2e;
+            border-color: #dea123;
+        }
+
+        .window-controls .control.maximize {
+            background: #28c840;
+            border-color: #1aab2c;
+        }
+
+        .window-controls .control::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .card-header:hover .window-controls .control::after {
+            opacity: 0.8;
+        }
+
+        .window-controls .control.close::after {
+            content: '×';
+            width: auto;
+            height: auto;
+            background: none;
+            font-size: 10px;
+            line-height: 1;
+            font-weight: 700;
+            color: rgba(0, 0, 0, 0.7);
+        }
+
+        .window-controls .control.minimize::after {
+            width: 6px;
+            height: 2px;
+            background: rgba(0, 0, 0, 0.6);
+        }
+
+        .window-controls .control.maximize::after {
+            width: 6px;
+            height: 6px;
+            background: linear-gradient(
+                    45deg,
+                    rgba(0, 0, 0, 0.6) 0%,
+                    rgba(0, 0, 0, 0.6) 45%,
+                    transparent 45%,
+                    transparent 55%,
+                    rgba(0, 0, 0, 0.6) 55%,
+                    rgba(0, 0, 0, 0.6) 100%
+            );
+        }
+
+        /* 管理员删除按钮（仅 body.admin-mode 下显示） */
+        .window-controls .control.delete {
+            background: #ab47bc;
+            border-color: #8e24aa;
+        }
+
+        body:not(.admin-mode) .window-controls .control.delete {
+            display: none;
+        }
+
+        .window-controls .control.delete::after {
+            content: '🗑';
+            width: auto;
+            height: auto;
+            background: none;
+            font-size: 8px;
+            line-height: 1;
+        }
+
+        .card-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: rgba(0, 0, 0, 0.55);
+            padding-left: 10px;
+            flex: 1;
+        }
+
+        .card-body {
+            padding: 16px;
+            font-size: 16px;
+            line-height: 1.4;
+            font-weight: 600;
+            color: rgba(0, 0, 0, 0.72);
+        }
+
+        @media (max-width: 768px) {
+            .card {
+                width: 180px;
+                border-radius: 10px;
+            }
+
+            .card-body {
+                padding: 14px;
+                font-size: 14px;
+            }
+
+            .card-title {
+                font-size: 12px;
+            }
+        }
+
+        .github-corner {
+            position: fixed;
+            top: 0;
+            left: 0;
+            border: 0;
+            transform: scaleX(-1);
+            z-index: 1000;
+        }
+
+        .github-corner:hover svg {
+            fill: var(--primary-dark);
+        }
+
+        .github-corner svg {
+            fill: var(--primary-color);
+            color: white;
+            transition: var(--transition);
+        }
+
+        .github-corner:hover .octo-arm {
+            animation: octocat-wave 560ms ease-in-out;
+        }
+
+        @keyframes octocat-wave {
+            0%, 100% {
+                transform: rotate(0);
+            }
+            20%, 60% {
+                transform: rotate(-25deg);
+            }
+            40%, 80% {
+                transform: rotate(10deg);
+            }
+        }
+
+        #note-input-container {
+            position: fixed;
+            left: 50%;
+            bottom: 40px;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.3); /* 半透明背景 */
+            backdrop-filter: blur(10px); /* 毛玻璃效果 */
+            padding: 10px 16px;
+            border-radius: 16px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            z-index: 1000001;
+            transition: all 0.3s ease;
+        }
+
+        #note-input {
+            flex: 1;
+            font-size: 16px;
+            padding: 10px 14px;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            border-radius: 12px;
+            outline: none;
+            background: rgba(255, 255, 255, 0.25); /* 半透明输入背景 */
+            color: #333;
+            min-width: 280px;
+            box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.3);
+            transition: all 0.2s ease;
+        }
+
+        #note-input::placeholder {
+            color: rgba(0, 0, 0, 0.4);
+        }
+
+        #note-input:focus {
+            background: rgba(255, 255, 255, 0.5);
+            border-color: rgba(0, 0, 0, 0.2);
+        }
+
+        #note-submit {
+            font-size: 16px;
+            padding: 10px 18px;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            background: rgba(76, 175, 80, 0.7); /* 半透明绿色 */
+            color: white;
+            backdrop-filter: blur(6px);
+            transition: all 0.25s ease;
+            box-shadow: 0 2px 6px rgba(76, 175, 80, 0.3);
+        }
+
+        #note-submit:hover {
+            background: rgba(76, 175, 80, 0.9);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(76, 175, 80, 0.4);
+        }
+
+        #note-submit:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 6px rgba(76, 175, 80, 0.3);
+        }
+
+        #top-link-container {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000002;
+        }
+
+        #top-link-container .top-link-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px 20px;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            background: rgba(255, 255, 255, 0.35);
+            color: rgba(0, 0, 0, 0.72);
+            font-size: 16px;
+            font-weight: 600;
+            text-decoration: none;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+            backdrop-filter: blur(10px);
+            transition: all 0.25s ease;
+        }
+
+        #top-link-container .top-link-button .top-link-icon {
+            width: 18px;
+            height: 18px;
+            margin-right: 8px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            fill: rgba(76, 175, 80, 0.8);
+            transition: transform 0.25s ease, fill 0.25s ease;
+        }
+
+        #top-link-container .top-link-button:hover {
+            background: rgba(255, 255, 255, 0.55);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+        }
+
+        #top-link-container .top-link-button:hover .top-link-icon {
+            transform: scale(1.1);
+            fill: rgba(76, 175, 80, 1);
+        }
+
+        #top-link-container .top-link-button:active {
+            transform: translateY(0);
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
+        }
+
+        /* ===== 右上角统计面板 ===== */
+        #stats-panel {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000002;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 16px;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            background: rgba(255, 255, 255, 0.35);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+            font-size: 14px;
+            font-weight: 600;
+            color: rgba(0, 0, 0, 0.72);
+            user-select: none;
+        }
+
+        #stats-panel .stat-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #4caf50;
+            margin-right: 6px;
+            animation: statPulse 2s infinite;
+        }
+
+        @keyframes statPulse {
+            0%, 100% { box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.25); }
+            50% { box-shadow: 0 0 0 6px rgba(76, 175, 80, 0.08); }
+        }
+
+        #stats-panel .stat-divider {
+            width: 1px;
+            height: 14px;
+            background: rgba(0, 0, 0, 0.15);
+        }
+
+        @media (max-width: 768px) {
+            #stats-panel {
+                top: 12px;
+                right: 12px;
+                padding: 8px 12px;
+                font-size: 12px;
+                gap: 8px;
+            }
+        }
+
+        /* ===== Waline 登录弹窗 ===== */
+        #login-btn {
+            font-size: 15px;
+            padding: 10px 14px;
+            border: 1px solid rgba(33, 150, 243, 0.4);
+            border-radius: 12px;
+            cursor: pointer;
+            background: rgba(33, 150, 243, 0.55);
+            color: white;
+            backdrop-filter: blur(6px);
+            transition: all 0.25s ease;
+            box-shadow: 0 2px 6px rgba(33, 150, 243, 0.3);
+            max-width: 140px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        #login-btn:hover {
+            background: rgba(33, 150, 243, 0.8);
+            transform: translateY(-1px);
+        }
+
+        #login-btn.logged-in {
+            background: rgba(255, 255, 255, 0.35);
+            color: rgba(0, 0, 0, 0.72);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+
+        #login-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s ease;
+        }
+
+        #login-overlay.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        #login-dialog {
+            width: 350px;
+            max-width: calc(100vw - 32px);
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            border-radius: 20px;
+            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.25);
+            padding: 24px;
+            transform: translateY(14px) scale(0.97);
+            transition: transform 0.25s ease;
+        }
+
+        #login-overlay.open #login-dialog {
+            transform: translateY(0) scale(1);
+        }
+
+        #login-dialog h3 {
+            font-size: 18px;
+            color: rgba(0, 0, 0, 0.78);
+            margin-bottom: 14px;
+            text-align: center;
+        }
+
+        /* ===== 词云图弹窗 ===== */
+        #top-link-container button.top-link-button {
+            font-family: inherit;
+            cursor: pointer;
+        }
+
+        #wordcloud-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.35);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2100000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s ease;
+        }
+
+        #wordcloud-overlay.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        #wordcloud-dialog {
+            width: min(900px, calc(100vw - 32px));
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            border-radius: 20px;
+            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.25);
+            padding: 20px;
+            transform: translateY(14px) scale(0.97);
+            transition: transform 0.25s ease;
+        }
+
+        #wordcloud-overlay.open #wordcloud-dialog {
+            transform: translateY(0) scale(1);
+        }
+
+        .wordcloud-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .wordcloud-header h3 {
+            font-size: 18px;
+            color: rgba(0, 0, 0, 0.78);
+            flex: 1;
+        }
+
+        #wordcloud-close {
+            width: 32px;
+            height: 32px;
+            border: none;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.06);
+            color: rgba(0, 0, 0, 0.6);
+            font-size: 18px;
+            line-height: 1;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        #wordcloud-close:hover {
+            background: rgba(0, 0, 0, 0.12);
+        }
+
+        #wordcloud-canvas {
+            display: block;
+            width: 100%;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.4);
+        }
+
+        #wordcloud-empty {
+            display: none;
+            text-align: center;
+            padding: 60px 0;
+            font-size: 15px;
+            color: rgba(0, 0, 0, 0.45);
+        }
+
+        /* ===== 轻提示 Toast ===== */
+        #toast {
+            position: fixed;
+            left: 50%;
+            top: 24px;
+            transform: translate(-50%, -12px);
+            background: rgba(0, 0, 0, 0.75);
+            color: #fff;
+            font-size: 14px;
+            padding: 10px 18px;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.3s ease;
+            z-index: 3000000;
+            max-width: calc(100vw - 48px);
+        }
+
+        #toast.show {
+            opacity: 1;
+            transform: translate(-50%, 0);
+        }
+
+        /* 已登录视图 */
+        #login-profile {
+            display: none;
+            text-align: center;
+        }
+
+        #login-profile .profile-avatar {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid rgba(255, 255, 255, 0.9);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            margin-bottom: 10px;
+        }
+
+        #login-profile .profile-avatar-fallback {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #42a5f5, #7e57c2);
+            color: #fff;
+            font-size: 26px;
+            font-weight: 600;
+            line-height: 64px;
+            margin: 0 auto 10px;
+        }
+
+        #login-profile .profile-nick {
+            font-size: 17px;
+            font-weight: 700;
+            color: rgba(0, 0, 0, 0.8);
+        }
+
+        #login-profile .profile-email {
+            font-size: 13px;
+            color: rgba(0, 0, 0, 0.45);
+            margin-top: 4px;
+        }
+
+        #login-profile .profile-badge {
+            display: inline-block;
+            margin-top: 8px;
+            font-size: 12px;
+            padding: 3px 10px;
+            border-radius: 999px;
+            background: rgba(33, 150, 243, 0.12);
+            color: #1e88e5;
+            font-weight: 600;
+        }
+
+        #login-profile .profile-badge.admin {
+            background: rgba(171, 71, 188, 0.12);
+            color: #8e24aa;
+        }
+
+        #login-logout {
+            width: 100%;
+            margin-top: 16px;
+            font-size: 15px;
+            padding: 11px 0;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            background: rgba(229, 57, 53, 0.08);
+            color: #e53935;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        #login-logout:hover {
+            background: rgba(229, 57, 53, 0.15);
+        }
+    </style>
+</head>
+<body>
+<!-- GitHub 角标 -->
+<a href="https://github.com/ZyPLJ/NoteWeb" target="_blank" aria-label="View source on Github"
+   class="github-corner">
+    <svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true" style="fill: #151513; color: #fff;">
+        <path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path>
+        <path
+                d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2"
+                fill="currentColor" class="octo-arm" style="transform-origin: 130px 106px;"></path>
+        <path
+                d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z"
+                fill="currentColor" class="octo-body"></path>
+    </svg>
+</a>
+<div id="top-link-container">
+    <button class="top-link-button" id="wordcloud-btn" type="button">
+        <svg class="top-link-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M5 5h7v2H7v10h10v-5h2v7a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Zm11-2h5v5h-2V5.414l-6.793 6.793-1.414-1.414L17.586 4H16V3Z"></path>
+        </svg>
+        词云图
+    </button>
+</div>
+<!-- 右上角统计面板 -->
+<div id="stats-panel" aria-live="polite">
+    <span class="stat-item"><span class="stat-dot"></span>在线 <span id="online-count">—</span> 人</span>
+    <span class="stat-divider"></span>
+    <span class="stat-item">心愿 <span id="note-count">0</span> 条</span>
+</div>
+<div id="board"></div>
+<!-- 添加便签输入区域 -->
+<div id="note-input-container">
+    <button id="login-btn" type="button">登录</button>
+    <input id="note-input" type="text" placeholder="输入新的便签内容..."/>
+    <button id="note-submit">添加</button>
+</div>
+
+<!-- Waline 登录弹窗（已登录：显示用户信息/退出） -->
+<div id="login-overlay">
+    <div id="login-dialog" role="dialog" aria-modal="true" aria-label="Waline 账号信息">
+        <div id="login-profile">
+            <img id="profile-avatar-img" class="profile-avatar" src="" alt="" style="display: none"/>
+            <div id="profile-avatar-fallback" class="profile-avatar-fallback"></div>
+            <div class="profile-nick" id="profile-nick"></div>
+            <div class="profile-email" id="profile-email"></div>
+            <span class="profile-badge" id="profile-badge">Waline 账号</span>
+            <button id="login-logout" type="button">退出登录</button>
+        </div>
+    </div>
+</div>
+
+<!-- 词云图弹窗 -->
+<div id="wordcloud-overlay">
+    <div id="wordcloud-dialog" role="dialog" aria-modal="true" aria-label="便签词云图">
+        <div class="wordcloud-header">
+            <h3>便签词云图</h3>
+            <button id="wordcloud-close" type="button" aria-label="关闭">×</button>
+        </div>
+        <canvas id="wordcloud-canvas"></canvas>
+        <div id="wordcloud-empty">暂无便签内容，先去发几条吧～</div>
+    </div>
+</div>
+
+<!-- 轻提示 -->
+<div id="toast"></div>
+
+<script is:inline>
+    const board = document.getElementById('board')
+
+    // ===== Waline 配置 =====
+    const WALINE_SERVER = 'https://yu.y00.cc.cd'
+    // 便签墙使用的评论 path（GET 的 path 参数与 POST 的 url 字段都用它）
+    // 保持 '/note-wall' 不变，旧数据才能继续显示
+    const WALINE_PATH = '/note-wall'
+
+    const colors = [
+        '#ffe0e3',
+        '#c7f0ff',
+        '#ffd8a8',
+        '#d9f2d9',
+        '#e5d7ff',
+        '#f9f7d9',
+        '#d2f0f8',
+        '#ffd4f5'
+    ]
+
+    const cardStates = new WeakMap()
+    const MAXIMIZED_LAYER = 1000000
+    let activeMaximizedCard = null
+    let isMobile =
+        window.matchMedia('(pointer: coarse)').matches ||
+        window.innerWidth <= 768
+    let zIndexCursor = 200
+
+    document.body.classList.toggle('is-mobile', isMobile)
+
+    function randomFrom(array) {
+        return array[Math.floor(Math.random() * array.length)]
+    }
+
+    function clamp(value, min, max) {
+        return Math.min(Math.max(value, min), max)
+    }
+
+    function applyTransform(card, state) {
+        const scale = state.scale ?? 1
+        const translateX = state.translateX ?? 0
+        const translateY = state.translateY ?? 0
+        const angle = state.angle ?? 0
+        card.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale}) rotate(${angle}deg)`
+    }
+
+    function bringToFront(card) {
+        if (card === activeMaximizedCard) {
+            card.style.zIndex = MAXIMIZED_LAYER
+            return
+        }
+
+        zIndexCursor += 1
+        if (activeMaximizedCard && zIndexCursor >= MAXIMIZED_LAYER) {
+            zIndexCursor = MAXIMIZED_LAYER - 1
+        }
+
+        card.style.zIndex = zIndexCursor
+    }
+
+    function setupCardInteractions(card) {
+        const header = card.querySelector('.card-header')
+        const closeBtn = card.querySelector('.control.close')
+        const minimizeBtn = card.querySelector('.control.minimize')
+        const maximizeBtn = card.querySelector('.control.maximize')
+
+        closeBtn.addEventListener('click', event => {
+            event.stopPropagation()
+            closeCard(card)
+        })
+
+        minimizeBtn.addEventListener('click', event => {
+            event.stopPropagation()
+            minimizeCard(card)
+        })
+
+        maximizeBtn.addEventListener('click', event => {
+            event.stopPropagation()
+            toggleMaximize(card)
+        })
+
+        // 管理员删除按钮
+        const deleteBtn = card.querySelector('.control.delete')
+        if (deleteBtn) {
+            deleteBtn.addEventListener('click', event => {
+                event.stopPropagation()
+                deleteCard(card)
+            })
+        }
+
+        header.addEventListener('pointerdown', event => {
+            startDrag(event, card)
+        })
+
+        card.addEventListener('pointerdown', () => {
+            bringToFront(card)
+        })
+
+        header.addEventListener('dblclick', event => {
+            if (!event.target.closest('.control')) {
+                toggleMaximize(card)
+            }
+        })
+    }
+
+    function closeCard(card) {
+        const state = cardStates.get(card)
+        if (!state || state.closing) return
+        if (card === activeMaximizedCard) {
+            activeMaximizedCard = null
+        }
+        state.closing = true
+        state.scale = 0.1
+        card.style.opacity = '0'
+        applyTransform(card, state)
+
+        const handleTransitionEnd = event => {
+            if (event.propertyName === 'opacity') {
+                card.removeEventListener('transitionend', handleTransitionEnd)
+                card.remove()
+            }
+        }
+
+        card.addEventListener('transitionend', handleTransitionEnd)
+    }
+
+    function minimizeCard(card) {
+        const state = cardStates.get(card)
+        if (!state || state.closing) return
+
+        const runMinimize = () => {
+            state.closing = true
+            bringToFront(card)
+            const bottom = Math.max(window.innerHeight - 24, 0)
+            const targetLeft = clamp(
+                state.left,
+                16,
+                Math.max(window.innerWidth - card.offsetWidth - 16, 16)
+            )
+
+            state.left = targetLeft
+            state.top = bottom
+            state.scale = 0.1
+            state.angle = 0
+            card.style.left = `${targetLeft}px`
+            card.style.top = `${bottom}px`
+            card.style.opacity = '0.35'
+            applyTransform(card, state)
+
+            const handleTransitionEnd = event => {
+                if (event.propertyName === 'transform') {
+                    card.removeEventListener('transitionend', handleTransitionEnd)
+                    card.remove()
+                }
+            }
+
+            card.addEventListener('transitionend', handleTransitionEnd)
+        }
+
+        if (state.maximized) {
+            activeMaximizedCard = null
+            state.maximized = false
+            card.classList.remove('maximized')
+            card.style.borderRadius = '12px'
+            state.left = 0
+            state.top = 0
+            state.scale = 1
+            state.angle = 0
+            applyTransform(card, state)
+
+            requestAnimationFrame(() => {
+                requestAnimationFrame(runMinimize)
+            })
+            return
+        }
+
+        runMinimize()
+    }
+
+    function toggleMaximize(card) {
+        const state = cardStates.get(card)
+        if (!state || state.closing) return
+
+        if (state.maximized) {
+            restoreFromMaximize(card, state)
+        } else {
+            maximizeCard(card, state)
+        }
+    }
+
+    function maximizeCard(card, state) {
+        state.beforeMaximize = {
+            left: state.left,
+            top: state.top,
+            scale: state.scale ?? 1,
+            width: card.offsetWidth,
+            height: card.offsetHeight,
+            angle: state.angle ?? 0
+        }
+
+        card.classList.add('maximized')
+        card.style.left = '0px'
+        card.style.top = '0px'
+        card.style.width = `${window.innerWidth}px`
+        card.style.height = `${window.innerHeight}px`
+        card.style.borderRadius = '0'
+
+        state.left = 0
+        state.top = 0
+        state.scale = 1
+        state.angle = 0
+        applyTransform(card, state)
+        activeMaximizedCard = card
+        bringToFront(card)
+        state.maximized = true
+    }
+
+    function restoreFromMaximize(card, state) {
+        const previous = state.beforeMaximize
+        if (!previous) return
+
+        card.classList.remove('maximized')
+        card.style.left = `${previous.left}px`
+        card.style.top = `${previous.top}px`
+        card.style.width = `${previous.width}px`
+        card.style.height = `${previous.height}px`
+        card.style.borderRadius = '12px'
+
+        state.left = previous.left
+        state.top = previous.top
+        state.scale = previous.scale ?? 1
+        state.angle = previous.angle ?? state.angle ?? 0
+        applyTransform(card, state)
+        state.maximized = false
+        if (activeMaximizedCard === card) {
+            activeMaximizedCard = null
+        }
+        bringToFront(card)
+        state.lastPosition = {left: state.left, top: state.top}
+
+        setTimeout(() => {
+            if (!state.maximized) {
+                card.style.width = ''
+                card.style.height = ''
+                state.width = card.offsetWidth
+                state.height = card.offsetHeight
+            }
+        }, 360)
+    }
+
+    function startDrag(event, card) {
+        const control = event.target.closest('.control')
+        if (control) return
+
+        const state = cardStates.get(card)
+        if (!state || state.closing || state.maximized) return
+
+        event.preventDefault()
+        bringToFront(card)
+
+        const header = card.querySelector('.card-header')
+        card.classList.add('dragging')
+        header.classList.add('dragging')
+
+        state.dragging = true
+        state.dragOffsetX = event.clientX - state.left
+        state.dragOffsetY = event.clientY - state.top
+
+        let dragFrame = null
+        let pendingLeft = state.left
+        let pendingTop = state.top
+
+        const commitDrag = () => {
+            dragFrame = null
+            const maxLeft = Math.max(window.innerWidth - card.offsetWidth, 0)
+            const maxTop = Math.max(window.innerHeight - card.offsetHeight, 0)
+            state.left = clamp(pendingLeft, -card.offsetWidth * 0.4, maxLeft)
+            state.top = clamp(pendingTop, -card.offsetHeight * 0.4, maxTop)
+            card.style.left = `${state.left}px`
+            card.style.top = `${state.top}px`
+        }
+
+        const handlePointerMove = moveEvent => {
+            if (!state.dragging) return
+
+            pendingLeft = moveEvent.clientX - state.dragOffsetX
+            pendingTop = moveEvent.clientY - state.dragOffsetY
+            if (dragFrame === null) {
+                dragFrame = requestAnimationFrame(commitDrag)
+            }
+        }
+
+        const handlePointerUp = () => {
+            state.dragging = false
+            state.lastPosition = {left: state.left, top: state.top}
+            card.classList.remove('dragging')
+            header.classList.remove('dragging')
+            if (dragFrame !== null) {
+                cancelAnimationFrame(dragFrame)
+                commitDrag()
+            }
+            document.removeEventListener('pointermove', handlePointerMove)
+            document.removeEventListener('pointerup', handlePointerUp)
+        }
+
+        document.addEventListener('pointermove', handlePointerMove)
+        document.addEventListener('pointerup', handlePointerUp)
+    }
+
+    // ===== 统计 =====
+    let noteCount = 0
+
+    function updateNoteCount() {
+        const el = document.getElementById('note-count')
+        if (el) el.textContent = noteCount
+    }
+
+    // ✅ 从 Waline 接口获取评论作为便签
+    async function fetchMessages() {
+        try {
+            // Waline REST API 端点为 /api/comment
+            // sortBy 用 insertedAt_asc（旧到新），避免使用已废弃的 sortOrder 参数
+            const url = `${WALINE_SERVER}/api/comment?path=${encodeURIComponent(WALINE_PATH)}&page=1&pageSize=100&sortBy=insertedAt_asc`
+            const res = await fetch(url)
+            const data = await res.json()
+            console.log('✅ 已解析 Waline 评论:', data)
+            // /api/comment 响应格式: { errno, errmsg, data: { page, totalPages, ..., data: [...] } }
+            // 评论数组在 data.data.data
+            if (data && data.errno === 0 && data.data && Array.isArray(data.data.data)) {
+                // 只取顶级评论（无父评论），orig 字段是原始纯文本
+                const topComments = data.data.data.filter(c => !c.rid && !c.pid)
+                noteCount = topComments.length
+                updateNoteCount()
+                topComments.forEach(c => createCard(c.orig || stripHtml(c.comment), c.objectId))
+            } else {
+                console.warn('⚠️ Waline 返回格式异常:', data)
+            }
+        } catch (e) {
+            console.error('❌ 获取 Waline 评论失败:', e)
+        }
+    }
+
+    // 去除 Waline comment 字段中的 HTML 标签，作为 orig 缺失时的兜底
+    function stripHtml(html) {
+        if (!html) return ''
+        const tmp = document.createElement('div')
+        tmp.innerHTML = html
+        return tmp.textContent || tmp.innerText || ''
+    }
+
+    // 转义用户输入，防止 innerHTML 注入
+    function escapeHtml(str) {
+        if (!str) return ''
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;')
+    }
+
+    function createCard(message, objectId) {
+        const card = document.createElement('div')
+        card.className = 'card'
+        if (objectId) card.dataset.objectId = objectId
+
+        const color = randomFrom(colors)
+        const angle = (Math.random() - 0.5) * 8
+        const cardWidth = isMobile ? 180 : 220
+        const cardHeight = isMobile ? 130 : 140
+        const horizontalMargin = isMobile ? 12 : 16
+        const verticalMargin = isMobile ? 12 : 20
+        const left =
+            horizontalMargin +
+            Math.random() *
+            Math.max(window.innerWidth - cardWidth - horizontalMargin * 2, 0)
+        const top =
+            verticalMargin +
+            Math.random() *
+            Math.max(window.innerHeight - cardHeight - verticalMargin * 2, 0)
+
+        card.style.background = color
+        card.style.left = `${left}px`
+        card.style.top = `${top}px`
+        card.style.zIndex = ++zIndexCursor
+
+        card.innerHTML = `
+					<div class="card-header">
+						<div class="window-controls">
+							<button class="control close" type="button" aria-label="关闭"></button>
+							<button class="control minimize" type="button" aria-label="最小化"></button>
+							<button class="control maximize" type="button" aria-label="最大化"></button>
+							<button class="control delete" type="button" title="删除心愿（管理员）" aria-label="删除心愿（管理员）"></button>
+						</div>
+						<div class="card-title">温馨提示</div>
+					</div>
+					<div class="card-body">${escapeHtml(message)}</div>
+				`
+
+        const state = {
+            angle,
+            scale: isMobile ? 0.85 : 0.7,
+            left,
+            top,
+            maximized: false,
+            closing: false,
+            lastPosition: {left, top}
+        }
+
+        cardStates.set(card, state)
+        applyTransform(card, state)
+        board.appendChild(card)
+
+        state.width = card.offsetWidth
+        state.height = card.offsetHeight
+
+        requestAnimationFrame(() => {
+            state.scale = 1
+            applyTransform(card, state)
+            card.style.opacity = '1'
+        })
+
+        setupCardInteractions(card)
+    }
+
+    // ✅ 启动时从接口加载
+    fetchMessages()
+
+    window.addEventListener('resize', () => {
+        isMobile =
+            window.matchMedia('(pointer: coarse)').matches ||
+            window.innerWidth <= 768
+        document.body.classList.toggle('is-mobile', isMobile)
+        document.querySelectorAll('.card.maximized').forEach(card => {
+            card.style.width = `${window.innerWidth}px`
+            card.style.height = `${window.innerHeight}px`
+        })
+    })
+
+    const noteInput = document.getElementById('note-input');
+    const noteSubmit = document.getElementById('note-submit');
+
+    // ===== Waline 登录 =====
+    const LOGIN_STORAGE_KEY = 'notewall_waline_user'
+    let currentUser = null
+
+    function loadUser() {
+        try {
+            const raw = localStorage.getItem(LOGIN_STORAGE_KEY)
+            currentUser = raw ? JSON.parse(raw) : null
+        } catch (e) {
+            currentUser = null
+        }
+    }
+
+    function saveUser(user) {
+        currentUser = user
+        try {
+            localStorage.setItem(LOGIN_STORAGE_KEY, JSON.stringify(user))
+        } catch (e) {
+            console.warn('⚠️ 无法保存登录状态:', e)
+        }
+    }
+
+    function clearUser() {
+        currentUser = null
+        try {
+            localStorage.removeItem(LOGIN_STORAGE_KEY)
+        } catch (e) {
+        }
+    }
+
+    // 登录按钮 / 输入框占位文案随登录状态变化
+    function refreshLoginUI() {
+        const loginBtn = document.getElementById('login-btn')
+        if (currentUser && currentUser.nick) {
+            loginBtn.textContent = currentUser.nick
+            loginBtn.classList.add('logged-in')
+            loginBtn.title = currentUser.mode === 'account' ? 'Waline 账号已登录' : '昵称登录中，点击修改'
+        } else {
+            loginBtn.textContent = '登录'
+            loginBtn.classList.remove('logged-in')
+            loginBtn.title = '登录 Waline'
+        }
+        // 管理员模式：卡片上显示删除按钮
+        document.body.classList.toggle('admin-mode', isAdmin())
+    }
+
+    // 是否 Waline 管理员（官方登录页回传的 type 字段为 administrator）
+    function isAdmin() {
+        return !!(currentUser
+            && currentUser.mode === 'account'
+            && currentUser.type === 'administrator'
+            && currentUser.token)
+    }
+
+    // 管理员删除任意一条心愿：Waline DELETE /api/comment/:objectId
+    async function deleteCard(card) {
+        if (!isAdmin()) {
+            showToast('仅管理员可删除心愿')
+            return
+        }
+        const objectId = card.dataset.objectId
+        if (!objectId) {
+            showToast('该心愿缺少ID，无法删除')
+            return
+        }
+        if (!confirm('确定要删除这条心愿吗？删除后不可恢复')) return
+        try {
+            const res = await fetch(`${WALINE_SERVER}/api/comment/${objectId}`, {
+                method: 'DELETE',
+                headers: {Authorization: `Bearer ${currentUser.token}`}
+            })
+            const result = await res.json()
+            if (result.errno === 0) {
+                closeCard(card)
+                noteCount = Math.max(0, noteCount - 1)
+                updateNoteCount()
+                showToast('已删除心愿')
+            } else {
+                const msg = (typeof result.errmsg === 'string' && result.errmsg)
+                    ? result.errmsg
+                    : '删除失败，请稍后重试'
+                showToast(msg)
+                console.error('❌ 删除心愿失败:', result)
+            }
+        } catch (e) {
+            console.error('❌ 删除心愿网络错误:', e)
+            showToast('网络错误，请稍后重试')
+        }
+    }
+
+    // ---- 登录交互：直接跳转 Waline 官方登录页 ----
+    const loginOverlay = document.getElementById('login-overlay')
+    const WALINE_LOGIN_URL = `${WALINE_SERVER}/ui/login?lng=zh-CN`
+
+    // 顶部轻提示
+    function showToast(msg) {
+        const toast = document.getElementById('toast')
+        toast.textContent = msg
+        toast.classList.add('show')
+        clearTimeout(showToast._timer)
+        showToast._timer = setTimeout(() => toast.classList.remove('show'), 2600)
+    }
+
+    function openLoginDialog() {
+        if (!currentUser) return
+        renderProfile()
+        loginOverlay.classList.add('open')
+    }
+
+    function closeLoginDialog() {
+        loginOverlay.classList.remove('open')
+    }
+
+    function renderProfile() {
+        if (!currentUser) return
+        const nickEl = document.getElementById('profile-nick')
+        const emailEl = document.getElementById('profile-email')
+        const badgeEl = document.getElementById('profile-badge')
+        const avatarImg = document.getElementById('profile-avatar-img')
+        const avatarFallback = document.getElementById('profile-avatar-fallback')
+
+        nickEl.textContent = currentUser.nick || '未命名用户'
+        emailEl.textContent = currentUser.email || ''
+        badgeEl.textContent = isAdmin() ? '管理员' : (currentUser.mode === 'account' ? 'Waline 账号' : '昵称登录')
+        badgeEl.classList.toggle('admin', isAdmin())
+
+        if (currentUser.avatar) {
+            avatarImg.src = currentUser.avatar
+            avatarImg.style.display = 'inline-block'
+            avatarFallback.style.display = 'none'
+        } else {
+            avatarImg.style.display = 'none'
+            avatarFallback.style.display = 'block'
+            avatarFallback.textContent = (currentUser.nick || '?').charAt(0).toUpperCase()
+        }
+    }
+
+    document.getElementById('login-btn').addEventListener('click', () => {
+        if (currentUser) {
+            // 已登录 → 查看账号信息 / 退出
+            openLoginDialog()
+        } else {
+            // 未登录 → 直接跳转 Waline 官方登录页（新标签页）
+            // 登录成功后官方页会通过 window.opener.postMessage 把 token 发回本页
+            window.open(WALINE_LOGIN_URL, '_blank')
+            showToast('请在新打开的 Waline 页面完成登录')
+        }
+    })
+
+    document.getElementById('login-logout').addEventListener('click', () => {
+        clearUser()
+        refreshLoginUI()
+        closeLoginDialog()
+        showToast('已退出登录')
+    })
+
+    loginOverlay.addEventListener('click', e => {
+        if (e.target === loginOverlay) closeLoginDialog()
+    })
+
+    // 接收 Waline 官方登录页回传的账号信息
+    // （官方登录页登录成功后会调用 window.opener.postMessage({type:'userInfo', data:{token,...}})）
+    window.addEventListener('message', e => {
+        if (e.origin !== WALINE_SERVER) return
+        const payload = e.data
+        if (!payload || payload.type !== 'userInfo' || !payload.data) return
+        const u = payload.data
+        if (!u.token) return
+        saveUser({
+            mode: 'account',
+            token: u.token,
+            nick: u.display_name || (u.email ? u.email.split('@')[0] : '') || 'Waline 用户',
+            email: u.email || '',
+            avatar: u.avatar || '',
+            type: u.type || ''
+        })
+        refreshLoginUI()
+        showToast(`登录成功，欢迎 ${currentUser.nick}！`)
+    })
+
+    // 恢复上次登录状态
+    loadUser()
+    refreshLoginUI()
+
+    async function sendNote() {
+        const text = noteInput.value.trim();
+        if (!text) return;
+
+        try {
+            // Waline REST API: POST /api/comment
+            // mail/link 必须传（空字符串即可），否则服务端 500
+            // url 字段是文章路径（与 GET 的 path 对应），不是完整域名
+            const headers = {'Content-Type': 'application/json'};
+            // 已用 Waline 账号登录时携带 token，评论会归属到该账号
+            if (currentUser && currentUser.mode === 'account' && currentUser.token) {
+                headers['Authorization'] = `Bearer ${currentUser.token}`;
+            }
+            const res = await fetch(`${WALINE_SERVER}/api/comment`, {
+                method: 'POST',
+                headers: headers,
+                body: JSON.stringify({
+                    comment: text,
+                    nick: (currentUser && currentUser.nick) || '便签游客',
+                    mail: (currentUser && currentUser.email) || '',
+                    link: '',
+                    ua: navigator.userAgent,
+                    url: WALINE_PATH
+                })
+            });
+            const result = await res.json();
+            console.log('Waline 响应结果:', result);
+            // /api/comment 成功响应: { errno: 0, errmsg: "", data: { objectId, ... } }
+            if (result.errno === 0 && result.data) {
+                createCard(text, result.data.objectId);
+                noteInput.value = '';
+                noteCount += 1;
+                updateNoteCount();
+            } else {
+                // errmsg 可能是字符串或对象（如 {"comment":"comment can not be blank"}）
+                const msg = typeof result.errmsg === 'string'
+                    ? result.errmsg
+                    : (result.errmsg && Object.values(result.errmsg)[0]) || '发送失败，请稍后重试';
+                alert(msg);
+                console.error('❌ 发送失败:', result);
+            }
+        } catch (e) {
+            console.error('❌ 网络错误:', e);
+            alert('网络错误，请稍后重试');
+        }
+    }
+
+    // 点击按钮或按回车都能添加
+    noteSubmit.addEventListener('click', sendNote);
+    noteInput.addEventListener('keydown', e => {
+        if (e.key === 'Enter') sendNote();
+    });
+
+    // ===== 词云图 =====
+    const wordcloudOverlay = document.getElementById('wordcloud-overlay')
+    const wordcloudCanvas = document.getElementById('wordcloud-canvas')
+    const wordcloudEmpty = document.getElementById('wordcloud-empty')
+
+    function closeWordCloud() {
+        wordcloudOverlay.classList.remove('open')
+    }
+
+    document.getElementById('wordcloud-btn').addEventListener('click', openWordCloud)
+    document.getElementById('wordcloud-close').addEventListener('click', closeWordCloud)
+    wordcloudOverlay.addEventListener('click', e => {
+        if (e.target === wordcloudOverlay) closeWordCloud()
+    })
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape') {
+            if (wordcloudOverlay.classList.contains('open')) closeWordCloud()
+            if (loginOverlay.classList.contains('open')) closeLoginDialog()
+        }
+    })
+
+    // 动态加载 wordcloud2.js（jsdelivr 失败时回退 unpkg）
+    function loadWordCloudLib() {
+        if (window.WordCloud) return Promise.resolve()
+        const urls = [
+            'https://cdn.jsdelivr.net/npm/wordcloud@1.2.2/src/wordcloud2.js',
+            'https://unpkg.com/wordcloud@1.2.2/src/wordcloud2.js'
+        ]
+        return new Promise((resolve, reject) => {
+            const tryNext = i => {
+                if (i >= urls.length) {
+                    reject(new Error('词云库加载失败，请检查网络'))
+                    return
+                }
+                const s = document.createElement('script')
+                s.src = urls[i]
+                s.onload = () => resolve()
+                s.onerror = () => {
+                    s.remove()
+                    tryNext(i + 1)
+                }
+                document.head.appendChild(s)
+            }
+            tryNext(0)
+        })
+    }
+
+    // 拉取全部顶级便签文本（自动翻页）
+    async function fetchAllNoteTexts() {
+        const texts = []
+        let page = 1
+        while (page <= 20) {
+            const url = `${WALINE_SERVER}/api/comment?path=${encodeURIComponent(WALINE_PATH)}&page=${page}&pageSize=100&sortBy=insertedAt_asc`
+            const res = await fetch(url)
+            const data = await res.json()
+            if (!data || data.errno !== 0 || !data.data || !Array.isArray(data.data.data)) break
+            data.data.data.forEach(c => {
+                if (c.rid || c.pid) return
+                texts.push(c.orig || stripHtml(c.comment) || '')
+            })
+            const totalPages = data.data.totalPages || 1
+            if (page >= totalPages) break
+            page++
+        }
+        return texts
+    }
+
+    // 停用词
+    const STOPWORDS = new Set([
+        '我们', '你们', '他们', '她们', '它们', '什么', '没有', '可以', '这个', '那个', '就是',
+        '但是', '然后', '因为', '所以', '如果', '还是', '以及', '觉得', '知道', '现在', '时候',
+        '一下', '一个', '一些', '这样', '那样', '自己', '怎么', '为什么', '已经', '应该', '可能',
+        '真的', '非常', '特别', '所有', '大家', '地方', '东西', '问题', '事情', '直接', '最后',
+        'the', 'an', 'and', 'or', 'of', 'to', 'in', 'is', 'it', 'for', 'on', 'with', 'you',
+        'your', 'we', 'my', 'me', 'be', 'are', 'this', 'that', 'at', 'as', 'so', 'not'
+    ])
+
+    // 分词：英文按单词，中文按二元词组（滑动窗口）
+    function tokenize(text) {
+        const words = []
+        ;(text.match(/[a-zA-Z]+/g) || []).forEach(w => {
+            if (w.length > 1) words.push(w.toLowerCase())
+        })
+        ;(text.match(/[\u4e00-\u9fa5]+/g) || []).forEach(run => {
+            if (run.length < 2) return
+            for (let i = 0; i < run.length - 1; i++) {
+                words.push(run.slice(i, i + 2))
+            }
+        })
+        return words.filter(w => !STOPWORDS.has(w))
+    }
+
+    function buildWordList(texts) {
+        const freq = new Map()
+        texts.forEach(t => tokenize(t).forEach(w => freq.set(w, (freq.get(w) || 0) + 1)))
+        return [...freq.entries()]
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 150)
+    }
+
+    let wordcloudRendering = false
+    async function openWordCloud() {
+        wordcloudOverlay.classList.add('open')
+        if (wordcloudRendering) return
+        wordcloudRendering = true
+        wordcloudEmpty.style.display = 'none'
+        wordcloudEmpty.textContent = '暂无便签内容，先去发几条吧～'
+        wordcloudCanvas.style.display = 'block'
+        try {
+            const [texts] = await Promise.all([fetchAllNoteTexts(), loadWordCloudLib()])
+            const list = buildWordList(texts)
+            if (!list.length) {
+                wordcloudCanvas.style.display = 'none'
+                wordcloudEmpty.style.display = 'block'
+                return
+            }
+            const w = Math.min(window.innerWidth - 64, 840)
+            const h = Math.min(window.innerHeight - 180, 500)
+            wordcloudCanvas.width = w
+            wordcloudCanvas.height = h
+            const maxCount = list[0][1]
+            WordCloud(wordcloudCanvas, {
+                list: list,
+                fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif',
+                fontWeight: 700,
+                color: () => randomFrom(['#1e88e5', '#43a047', '#fb8c00', '#8e24aa', '#e53935', '#00897b', '#3949ab', '#d81b60']),
+                backgroundColor: 'transparent',
+                gridSize: 8,
+                weightFactor: size => Math.max(14, Math.sqrt(size / maxCount) * 64),
+                rotateRatio: 0.3,
+                rotationSteps: 2,
+                shrinkToFit: true
+            })
+        } catch (e) {
+            console.error('❌ 生成词云失败:', e)
+            wordcloudCanvas.style.display = 'none'
+            wordcloudEmpty.textContent = e.message || '词云生成失败，请稍后重试'
+            wordcloudEmpty.style.display = 'block'
+        } finally {
+            wordcloudRendering = false
+        }
+    }
+
+    // ===== 在线人数（公共 MQTT 心跳，无需后端） =====
+    // 访客间通过 broker.emqx.io 互发心跳：每 10s 广播一次自己的随机 ID，
+    // 汇总最近 40s 内有心跳的不重复 ID 数即为在线人数
+    let presenceOnline = 0
+
+    function updateOnlineCount() {
+        const el = document.getElementById('online-count')
+        if (el) el.textContent = presenceOnline > 0 ? presenceOnline : '—'
+    }
+
+    function loadMqttLib() {
+        if (window.mqtt) return Promise.resolve()
+        const urls = [
+            'https://cdn.jsdelivr.net/npm/mqtt@5.10.1/dist/mqtt.min.js',
+            'https://unpkg.com/mqtt@5.10.1/dist/mqtt.min.js'
+        ]
+        return new Promise((resolve, reject) => {
+            const tryNext = i => {
+                if (i >= urls.length) {
+                    reject(new Error('mqtt 库加载失败'))
+                    return
+                }
+                const s = document.createElement('script')
+                s.src = urls[i]
+                s.onload = () => window.mqtt ? resolve() : tryNext(i + 1)
+                s.onerror = () => {
+                    s.remove()
+                    tryNext(i + 1)
+                }
+                document.head.appendChild(s)
+            }
+            tryNext(0)
+        })
+    }
+
+    async function initPresence() {
+        const clientId = 'nw_' + Math.random().toString(36).slice(2, 10)
+        const seen = new Map([[clientId, Date.now()]])
+        const TOPIC = 'notewall-presence-yu-y00-cc-cd'
+        try {
+            await loadMqttLib()
+            const client = mqtt.connect('wss://broker.emqx.io:8084/mqtt', {
+                clientId,
+                clean: true,
+                reconnectPeriod: 5000,
+                connectTimeout: 8000
+            })
+            const beat = () => {
+                try {
+                    client.publish(TOPIC, clientId, {qos: 0})
+                } catch (e) {
+                }
+            }
+            client.on('connect', () => {
+                client.subscribe(TOPIC, beat)
+            })
+            client.on('message', (topic, msg) => {
+                seen.set(msg.toString(), Date.now())
+            })
+            setInterval(beat, 10000)
+            // 每 5s 清理过期心跳并刷新在线人数
+            setInterval(() => {
+                const now = Date.now()
+                for (const [id, t] of seen) {
+                    if (now - t > 40000) seen.delete(id)
+                }
+                presenceOnline = seen.size
+                updateOnlineCount()
+            }, 5000)
+        } catch (e) {
+            console.warn('⚠️ 在线人数功能不可用:', e)
+            presenceOnline = 0
+            updateOnlineCount()
+        }
+    }
+
+    initPresence()
+</script>
+</body>
+</html>
