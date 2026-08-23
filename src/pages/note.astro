@@ -4,7 +4,7 @@
 // 这是一个完整的独立页面（自带 <html>/<head>/<body>），不使用博客 Layout，
 // 因为便签墙需要独占整个视口（fixed 定位 + overflow: hidden）。
 // 如果想嵌进博客布局，需要自行剥离 html/head/body 并处理 body 样式冲突。
-const pageTitle = 'ZY知识库-便签墙'
+const pageTitle = 'Saimen-心愿墙'
 ---
 
 <!DOCTYPE html>
@@ -304,6 +304,7 @@ const pageTitle = 'ZY知识库-便签墙'
             border: none;
             border-radius: 12px;
             cursor: pointer;
+            white-space: nowrap;
             background: rgba(76, 175, 80, 0.7); /* 半透明绿色 */
             color: white;
             backdrop-filter: blur(6px);
@@ -684,7 +685,7 @@ const pageTitle = 'ZY知识库-便签墙'
 </head>
 <body>
 <!-- GitHub 角标 -->
-<a href="https://github.com/ZyPLJ/NoteWeb" target="_blank" aria-label="View source on Github"
+<a href="https://blog.z2m.store" target="_blank" aria-label="View source on Github"
    class="github-corner">
     <svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true" style="fill: #151513; color: #fff;">
         <path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path>
