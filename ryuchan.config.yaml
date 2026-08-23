@@ -67,11 +67,7 @@ site:
       href: /dynamic
       svg: material-symbols:chat-bubble-outline-rounded
       target: _self
-    - id: dynamic
-      text: 心愿墙
-      href: /note/
-      svg: material-symbols:chat-bubble-outline-rounded
-      target: _self    
+ 
     - id: album
       text: 相册
       href: /album
@@ -87,6 +83,11 @@ site:
       href: /friend
       svg: material-symbols:supervisor-account-outline-rounded
       target: _self
+    - id: dynamic
+      text: 心愿墙
+      href: /note/
+      svg: material-symbols:favorite
+      target: _self   
     - id: about
       text: null
       href: /about
